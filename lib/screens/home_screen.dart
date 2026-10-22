@@ -228,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Vacuula', style: TextStyle(fontWeight: FontWeight.w700)),
+                const Text('Neato Revive App', style: TextStyle(fontWeight: FontWeight.w700)),
                 Row(children: [
                   Container(
                     width: 8,

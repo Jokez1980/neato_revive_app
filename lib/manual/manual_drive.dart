@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 
@@ -65,7 +66,7 @@ String signDriveHandshake(String serial, String date, String secretKey) {
 /// Direct websocket connection to a Gen3 robot (Botvac Connected / D3-D7) for
 /// remote-control driving. The phone must be on the same network as the robot.
 class ManualDrive {
-  ManualDrive._(this._ws, this.info) {
+  ManualDrive._(this._ws, this.info, this._client) {
     _sub = _ws.listen(
       (m) => _messages.add(m is String ? m : utf8.decode(m as List<int>, allowMalformed: true)),
       onDone: _markClosed,
@@ -79,6 +80,7 @@ class ManualDrive {
   }
 
   final WebSocket _ws;
+  final HttpClient _client;
   final ManualInfo info;
   late final StreamSubscription<dynamic> _sub;
   late final Timer _keepAlive;
@@ -123,34 +125,73 @@ class ManualDrive {
   }
 
   /// Opens the signed websocket to ws://ip:port/drive.
+  ///
+  /// The handshake is done by hand instead of with WebSocket.connect, because
+  /// Dart sends header names in lower case ("authorization:") and the robot's
+  /// small web server only understands them spelled exactly like the Neato app
+  /// does ("Authorization:") - otherwise it answers "invalid authorization header".
   static Future<ManualDrive> open(String serial, ManualInfo info, String secretKey) async {
-    final url = 'ws://${info.ip}:${info.port}/drive';
+    final path = 'ws://${info.ip}:${info.port}/drive';
     final date = HttpDate.format(DateTime.now().toUtc());
+    final key = cleanSecretKey(secretKey);
+    final wsKey = base64.encode(List<int>.generate(16, (_) => _rnd.nextInt(256)));
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 8)
+      ..userAgent = null
+      ..autoUncompress = false;
     try {
-      final ws = await WebSocket.connect(
-        url,
-        headers: {
-          'Date': date,
-          'Authorization': 'NEATOAPP ${signDriveHandshake(serial, date, secretKey.trim())}',
-          'Origin': url,
-        },
-        compression: CompressionOptions.compressionOff,
-      ).timeout(const Duration(seconds: 8));
-      return ManualDrive._(ws, info);
+      final req = await client
+          .openUrl('GET', Uri.parse('http://${info.ip}:${info.port}/drive'))
+          .timeout(const Duration(seconds: 8));
+      req.followRedirects = false;
+      final h = req.headers;
+      h.removeAll(HttpHeaders.acceptEncodingHeader);
+      void set(String name, String value) => h.set(name, value, preserveHeaderCase: true);
+      set('Host', '${info.ip}:${info.port}');
+      set('Sec-WebSocket-Key', wsKey);
+      set('Sec-WebSocket-Version', '13');
+      set('Upgrade', 'websocket');
+      set('Origin', path);
+      set('Date', date);
+      set('Authorization', 'NEATOAPP ${signDriveHandshake(serial, date, key)}');
+      set('Connection', 'Upgrade');
+      final res = await req.close().timeout(const Duration(seconds: 8));
+      if (res.statusCode != HttpStatus.switchingProtocols) {
+        final body = (await utf8.decodeStream(res).timeout(const Duration(seconds: 3), onTimeout: () => ''))
+            .trim();
+        client.close(force: true);
+        final why = body.isNotEmpty ? body : '${res.statusCode} ${res.reasonPhrase}';
+        throw ManualDriveException(res.statusCode == 401 || res.statusCode == 403 || why.contains('auth')
+            ? 'The robot refused the connection ($why). Check the secret key (key icon at the top) '
+                'and that the robot is idle and not cleaning.'
+            : 'The robot refused the connection ($why).');
+      }
+      final socket = await res.detachSocket();
+      final ws = WebSocket.fromUpgradedSocket(socket, serverSide: false);
+      return ManualDrive._(ws, info, client);
+    } on ManualDriveException {
+      rethrow;
     } on TimeoutException {
+      client.close(force: true);
       throw ManualDriveException(
           'No answer from the robot at ${info.ip}:${info.port}. Is your phone on the same Wi-Fi as the robot'
           '${info.ssid != null ? ' ("${info.ssid}")' : ''}?');
-    } on WebSocketException catch (e) {
-      final m = e.message;
-      throw ManualDriveException(m.contains('401') || m.contains('403') || m.contains('not upgraded')
-          ? 'The robot refused the connection. Check the secret key (key icon at the top), '
-              'and that the robot is idle and not cleaning.'
-          : 'The robot refused the connection ($m).');
     } on SocketException catch (e) {
+      client.close(force: true);
       throw ManualDriveException('Could not reach the robot at ${info.ip}:${info.port} (${e.message}). '
           'Is your phone on the same Wi-Fi as the robot?');
+    } on HttpException catch (e) {
+      client.close(force: true);
+      throw ManualDriveException('The robot refused the connection (${e.message}).');
     }
+  }
+
+  static final _rnd = Random.secure();
+
+  /// Accepts the key alone, or the whole "serial key" line from the server command.
+  static String cleanSecretKey(String input) {
+    final parts = input.trim().split(RegExp(r'\s+'));
+    return parts.isEmpty ? '' : parts.last;
   }
 
   void send(Object what) {
@@ -190,6 +231,7 @@ class ManualDrive {
       await _ws.close(WebSocketStatus.normalClosure).timeout(const Duration(seconds: 2));
     } catch (_) {}
     await _sub.cancel();
+    _client.close(force: true);
     _markClosed();
     await _messages.close();
   }

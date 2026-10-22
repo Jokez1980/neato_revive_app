@@ -18,16 +18,16 @@ M=android/app/src/main/AndroidManifest.xml
 if [ -f "$M" ]; then
   echo "==> Android: http on the home network, notifications and background watcher"
   python3 android_extra/patch_android.py .
-  perl -pi -e 's/android:label="vacuula"/android:label="Vacuula"/' "$M"
+  perl -pi -e 's/android:label="[^"]*"/android:label="Neato Revive App"/' "$M"
 fi
 
 # ---------- iOS ----------
 P=ios/Runner/Info.plist
 if [ -f "$P" ] && command -v plutil >/dev/null 2>&1; then
   echo "==> iOS: allowing http and local network access"
-  plutil -replace CFBundleDisplayName -string "Vacuula" "$P"
+  plutil -replace CFBundleDisplayName -string "Neato Revive App" "$P"
   plutil -replace NSLocalNetworkUsageDescription \
-    -string "Vacuula needs to find and talk to your Vacuula server on your home network." "$P"
+    -string "Neato Revive App needs to find and talk to your Vacuula server on your home network." "$P"
   plutil -replace NSAppTransportSecurity \
     -json '{"NSAllowsArbitraryLoads":true,"NSAllowsLocalNetworking":true}' "$P"
 elif [ -f "$P" ]; then
@@ -37,7 +37,7 @@ fi
 echo "==> Fetching packages…"
 flutter pub get
 
-echo "==> Generating app icons from the Vacuula logo…"
+echo "==> Generating app icons…"
 dart run flutter_launcher_icons
 if ls android/app/src/main/res/mipmap-*/ic_launcher*.png >/dev/null 2>&1; then
   echo "    Android icons: OK"

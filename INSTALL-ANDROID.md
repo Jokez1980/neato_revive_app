@@ -1,6 +1,6 @@
-# Vacuula app – installing the test version on Android
+# Neato Revive App – installing the test version on Android
 
-Vacuula is an app for controlling a Neato robot vacuum through your own **Vacuula server** (https://github.com/vacuula/vacuula). It lets you start/stop cleaning, see status and battery, edit maps, no-go lines and zones, and get notifications.
+Neato Revive App is an app for controlling a Neato robot vacuum through your own **Vacuula server** (https://github.com/vacuula/vacuula). It lets you start/stop cleaning, see status and battery, edit maps, no-go lines and zones, and get notifications.
 
 This is a test version that is not on Google Play, so you install it from an APK file. **You do not need Developer mode or USB debugging** – that is only for developers building the app.
 
@@ -12,7 +12,7 @@ This is a test version that is not on Google Play, so you install it from an APK
 
 ## 1. Install the app
 
-1. Get the file **`vacuula-x.y.z.apk`** on your phone. The latest version is in the folder [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download): open it on your phone, tap the `.apk` file and then the **download** button (↓). You can also get it by e-mail, chat, Google Drive or USB cable.
+1. Get the file **`neato-revive-x.y.z.apk`** on your phone. The latest version is in the folder [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download): open it on your phone, tap the `.apk` file and then the **download** button (↓). You can also get it by e-mail, chat, Google Drive or USB cable.
 2. Tap the file to open it. You can find it in the **Files** / **My Files** app under *Downloads*, or in your browser's downloads.
 3. Android will say that this source is not allowed to install apps. Tap **Settings**, turn on **Allow from this source** for that app (Chrome, Files, Gmail…), and go back.
    - You can turn this off again after installing: *Settings → Apps → Special app access → Install unknown apps*.
@@ -74,7 +74,7 @@ Your phone must be on the same Wi-Fi as the robot, and the robot must be idle. H
 ## Updating to a new test version
 
 Download the newest APK from [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download) and install it on top of the old one – your settings are kept.
-If Android says **"App not installed"** or *"conflicts with an existing package"*, the new file was signed differently: uninstall the old Vacuula app first, then install the new one (you will need to enter the server address again).
+If Android says **"App not installed"** or *"conflicts with an existing package"*, the new file was signed differently: uninstall the old app (it may be called "Vacuula") first, then install the new one (you will need to enter the server address again).
 
 ## Using it away from home
 

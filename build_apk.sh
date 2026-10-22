@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds a shareable APK for testers.
 # Usage:  ./build_apk.sh
-# The APK ends up in dist/vacuula-<version>.apk
+# The APK ends up in dist/neato-revive-<version>.apk
 #
 # Do NOT add --dart-define=VACUULA_SERVER=... for shared builds: every tester
 # has their own server address and finds it with "Search network" in the app.
@@ -14,11 +14,13 @@ if [ ! -d android ]; then
 fi
 
 VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
-echo "==> Building Vacuula $VERSION (release APK)…"
+echo "==> Fetching packages…"
+flutter pub get
+echo "==> Building Neato Revive App $VERSION (release APK)…"
 flutter build apk --release "$@"
 
 mkdir -p dist
-OUT="dist/vacuula-$VERSION.apk"
+OUT="dist/neato-revive-$VERSION.apk"
 cp build/app/outputs/flutter-apk/app-release.apk "$OUT"
 SIZE="$(du -h "$OUT" | cut -f1)"
 SHA="$(shasum -a 256 "$OUT" | cut -d' ' -f1)"

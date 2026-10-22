@@ -1,4 +1,6 @@
-# Vacuula – Flutter app for your Vacuula server
+# Neato Revive App
+
+Flutter app for your Vacuula server (previously called "Vacuula app").
 
 A mobile app (iPhone and Android) that controls your Neato through your own Vacuula server on your home network.
 
@@ -11,7 +13,7 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 - **Remote control** (D3–D7, experimental): drive the robot with arrows on the phone.
 - **Schedule**: see, add, change and delete scheduled cleanings - days, time, cleaning mode and (optionally) a zone. Gen3 schedules can be switched on/off as a whole; Gen4 events one by one.
 - **Notifications (Android)** when a robot starts, recharges mid-clean, pauses, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline. Turn on in Settings > Notifications.
-- Light and dark mode. App icon made from the Vacuula logo.
+- Light and dark mode. Its own app icon (a robot vacuum with a "revive" arrow).
 
 ## Download and install on Android
 
@@ -27,7 +29,7 @@ You need Android 7.0 or newer, a [Vacuula server](https://github.com/vacuula/vac
 5. **Connect to your server:** open the app and tap **Search network**. If nothing is found, type your server's IP address (for example `192.168.1.50` – the same address you use for the Vacuula web page). Tap **Test**, then **Save**.
 6. **Notifications (optional):** in the app go to **Settings → Notifications → Notify me** and allow notifications. Then set *Android Settings → Apps → Vacuula → Battery* to **Unrestricted** so Android doesn't stop it.
 
-**Updating:** download the newest APK from the same folder and install it on top of the old one – your settings are kept. If Android says *"App not installed"*, uninstall the old Vacuula app first.
+**Updating:** download the newest APK from the same folder and install it on top of the old one – your settings are kept. If Android says *"App not installed"*, uninstall the old app first.
 
 More details, phone-specific battery tips and troubleshooting: **[INSTALL-ANDROID.md](INSTALL-ANDROID.md)**.
 
@@ -41,7 +43,7 @@ More details, phone-specific battery tips and troubleshooting: **[INSTALL-ANDROI
    cd vacuula_app
    ./setup.sh
    ```
-   The script creates the iOS and Android parts, allows the app to talk plain http to the server on your home network, and generates the app icon from the Vacuula logo.
+   The script creates the iOS and Android parts, allows the app to talk plain http to the server on your home network, and generates the app icon.
 3. Connect your phone with a cable and run:
    ```
    flutter run --release --dart-define=VACUULA_SERVER=192.168.1.250
@@ -54,7 +56,7 @@ With a free Apple ID the app stops working after 7 days; just run `flutter run -
 
 **Android:** Enable USB debugging on the phone to run it from your Mac.
 
-**Sharing with testers (APK):** run `./build_apk.sh`. It builds `dist/vacuula-<version>.apk` and prints its SHA-256. Put it in `latest_app_release_to_download/` (remove the old APK) and commit, or send the APK together with **INSTALL-ANDROID.md** (installation guide for testers - they do *not* need Developer mode). Don't build shared APKs with `--dart-define=VACUULA_SERVER=...`; testers find their own server with *Search network*. Bump `version:` in `pubspec.yaml` before each new build, and build on the same Mac so updates install on top of the old version.
+**Sharing with testers (APK):** run `./build_apk.sh`. It builds `dist/neato-revive-<version>.apk` and prints its SHA-256. Put it in `latest_app_release_to_download/` (remove the old APK) and commit, or send the APK together with **INSTALL-ANDROID.md** (installation guide for testers - they do *not* need Developer mode). Don't build shared APKs with `--dart-define=VACUULA_SERVER=...`; testers find their own server with *Search network*. Bump `version:` in `pubspec.yaml` before each new build, and build on the same Mac so updates install on top of the old version.
 
 ## First start
 If no address was built in, the app opens Settings. Tap **Search network**, or type the server's IP address (for example `192.168.1.250`). Tap **Test**, then **Save**.
@@ -66,8 +68,8 @@ Turn on **Settings > Notifications > Notify me** and allow notifications when An
 A background watcher then checks your robots every 15 seconds (every 5 while they work), also when the app is closed and after a reboot. Android shows a small, silent "Watching your robots" notification while it runs - that is required for background work.
 
 - It works while the phone can reach the server: on the home network or through a VPN. Away from home it waits quietly and checks once a minute.
-- For reliability, set *Android settings > Apps > Vacuula > Battery* to **Unrestricted**.
-- You can mute the categories separately under *Android settings > Apps > Vacuula > Notifications*: "Robot status", "Robot needs help" and "Background watcher".
+- For reliability, set *Android settings > Apps > Neato Revive App > Battery* to **Unrestricted**.
+- You can mute the categories separately under *Android settings > Apps > Neato Revive App > Notifications*: "Robot status", "Robot needs help" and "Background watcher".
 
 Built with the Flutter plugins `flutter_background_service` and `flutter_local_notifications`; `setup.sh` adds the Android permissions and settings they need (`android_extra/patch_android.py`). On iPhone, apps cannot keep running in the background like this, so the switch is hidden there.
 
@@ -117,4 +119,4 @@ Vacuula has no login, so never expose its port to the internet. Use a VPN into y
 - `lib/manual/manual_drive.dart`, `lib/screens/manual_screen.dart`: remote control (signed websocket straight to the robot).
 - `lib/problems.dart`: texts for error codes, same wording as the Vacuula web app.
 - `lib/widgets/robot_card.dart`: the card for each robot.
-- `assets/`: the Vacuula logo and app icon images. To use the red icon instead, change `icon_light.png` to `icon_red.png` and `#ECEAE6` to `#8E0D24` in `pubspec.yaml`, then run `dart run flutter_launcher_icons`.
+- `assets/`: app icon and in-app logo (original artwork - not the Vacuula or Neato logos).

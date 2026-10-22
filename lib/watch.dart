@@ -23,7 +23,7 @@ class RobotWatcher {
       await android?.createNotificationChannel(const AndroidNotificationChannel(
         watcherChannelId,
         'Background watcher',
-        description: 'Shown while Vacuula watches your robots',
+        description: 'Shown while Neato Revive App watches your robots',
         importance: Importance.min,
       ));
       await android?.createNotificationChannel(const AndroidNotificationChannel(

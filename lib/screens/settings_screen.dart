@@ -224,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: Icon(Icons.battery_alert_rounded, color: cs.primary),
                     title: const Text('Tip: let it run in the background'),
                     subtitle: const Text(
-                      'Android settings > Apps > Vacuula > Battery > Unrestricted, '
+                      'Android settings > Apps > Neato Revive App > Battery > Unrestricted, '
                       'so the phone does not stop the watcher.',
                     ),
                   ),
