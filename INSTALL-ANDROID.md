@@ -63,7 +63,7 @@ Tap **Schedule** on the robot card. Tap **+ Add**, pick days, time, cleaning mod
 
 ## 6. Robot details and history
 
-Tap the robot's **name** on its card to rename it and see battery details (D3–D7) and statistics. **History** on the card lists earlier cleanings; tap one for details. When the robot shows an alert such as "dust bin full", tap **Dismiss** after you have fixed it.
+Tap the robot's **name** on its card to rename it and see battery details (D3–D7) and statistics. **History** on the card lists earlier cleanings; tap one to see the map of where the robot cleaned and the details. When the robot shows an alert such as "dust bin full", tap **Dismiss** after you have fixed it.
 
 ## 7. Remote control (D3–D7, experimental)
 

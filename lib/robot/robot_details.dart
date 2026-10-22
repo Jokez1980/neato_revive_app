@@ -217,3 +217,17 @@ String formatDuration(Duration? d) {
 }
 
 String formatArea(double m2) => m2 >= 100 ? '${m2.round()} m²' : '${m2.toStringAsFixed(1)} m²';
+
+extension RunMapApi on VacuulaApi {
+  /// GET /api/robot/{serial}/run/{id}: the path the robot drove during a
+  /// cleaning, as a grid aligned cell-for-cell with that cleaning's floor map
+  /// (GET /api/robot/{serial}/maps/{id}). Null when the server has no map for it.
+  Future<Map<String, dynamic>?> runPathJson(RobotInfo r, String runId) async {
+    try {
+      final data = await getJson('/robot/${_seg(r.serial)}/run/${_seg(runId)}');
+      return data is Map ? data.cast<String, dynamic>() : null;
+    } on ApiException {
+      return null; // 404 "Map not found"
+    }
+  }
+}
