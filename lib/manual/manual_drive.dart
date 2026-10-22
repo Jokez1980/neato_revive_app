@@ -48,8 +48,11 @@ class ManualInfo {
 }
 
 class ManualDriveException implements Exception {
-  ManualDriveException(this.message);
+  ManualDriveException(this.message, {this.refused = false});
   final String message;
+
+  /// The robot's address answered, but nothing listened on the drive port (yet).
+  final bool refused;
   @override
   String toString() => message;
 }
@@ -103,11 +106,60 @@ class ManualDrive {
 
   /// Asks the robot (through the Vacuula server) to open manual mode, then
   /// connects to it directly.
-  static Future<ManualDrive> connect(VacuulaApi api, RobotInfo robot, String secretKey) async {
+  ///
+  /// If the robot is stuck in an old remote-control session (from an earlier
+  /// attempt that never closed), that session is ended first with
+  /// stopCleaning, and if the robot still refuses the connection the session is
+  /// reset once more and everything is retried. A real cleaning is never stopped.
+  /// [onProgress] gets short texts for the UI.
+  static Future<ManualDrive> connect(VacuulaApi api, RobotInfo robot, String secretKey,
+      {void Function(String)? onProgress}) async {
     if (robot.gen != RobotGen.gen3) {
       throw ManualDriveException('Remote control is only available on D3-D7 (Gen3) robots.');
     }
-    final res = await api.command(robot.serial, {'cmd': 'getRobotManualCleaningInfo'});
+    final say = onProgress ?? (_) {};
+
+    say('Checking the robot…');
+    final st = await _robotState(api, robot.serial);
+    if (st != null && st.busyCleaning) {
+      throw ManualDriveException('The robot is busy (cleaning, docking or mapping). '
+          'Stop it first, then start remote control.');
+    }
+    if (st != null && st.inManual) {
+      say('Ending an old remote-control session…');
+      await _endSession(api, robot.serial);
+    }
+
+    for (var round = 1; round <= 2; round++) {
+      if (round == 2) {
+        // Still refused: the robot may hold on to a half-closed session. End it and try again.
+        final st2 = await _robotState(api, robot.serial);
+        if (st2 != null && st2.busyCleaning) break;
+        say('The robot did not answer - resetting remote control and trying again…');
+        await _endSession(api, robot.serial);
+      }
+      say('Asking the robot to start remote control…');
+      final info = await _requestInfo(api, robot.serial);
+      say('Connecting to the robot at ${info.ip}…');
+      // The robot opens its drive port a moment after it answers, so retry for a
+      // few seconds while the connection is refused.
+      for (var attempt = 1; attempt <= 5; attempt++) {
+        try {
+          return await open(robot.serial, info, secretKey);
+        } on ManualDriveException catch (e) {
+          if (!e.refused) rethrow;
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+      }
+    }
+    throw ManualDriveException(
+        'The robot did not open remote control (connection refused), even after resetting it. '
+        'Make sure it is idle and not cleaning, and that your phone is on the same network as the robot '
+        '(not a guest network, VPN off). If it keeps happening, restart the robot (hold the power button).');
+  }
+
+  static Future<ManualInfo> _requestInfo(VacuulaApi api, String serial) async {
+    final res = await api.command(serial, {'cmd': 'getRobotManualCleaningInfo'});
     final data = (res is Map && res['data'] is Map) ? (res['data'] as Map) : null;
     if (data == null || data['ip_address'] is! String || data['port'] is! num) {
       final result = res is Map ? res['result'] : null;
@@ -115,13 +167,36 @@ class ManualDrive {
           'The robot did not start manual mode${result != null && result != 'ok' ? ' ($result)' : ''}. '
           'It must be idle (not cleaning) and support remote control.');
     }
-    final info = ManualInfo(
+    return ManualInfo(
       ip: data['ip_address'] as String,
       port: (data['port'] as num).toInt(),
       ssid: data['ssid'] as String?,
       validForSeconds: (data['valid_for_seconds'] as num?)?.toInt(),
     );
-    return open(robot.serial, info, secretKey);
+  }
+
+  /// Raw Gen3 state: state 2 = busy, 3 = paused; action 3 = manual cleaning.
+  static Future<({bool inManual, bool busyCleaning})?> _robotState(VacuulaApi api, String serial) async {
+    try {
+      final res = await api.command(serial, {'cmd': 'getRobotState'});
+      if (res is! Map) return null;
+      final state = res['state'];
+      final action = res['action'];
+      final active = state == 2 || state == 3;
+      return (inManual: active && action == 3, busyCleaning: active && action != 3);
+    } catch (_) {
+      return null; // not fatal - just try
+    }
+  }
+
+  /// Ends a (possibly hanging) manual session on the robot.
+  static Future<void> _endSession(VacuulaApi api, String serial) async {
+    try {
+      await api.command(serial, {'cmd': 'stopCleaning'});
+    } catch (_) {
+      // "not in a cleaning state" etc. is fine
+    }
+    await Future<void>.delayed(const Duration(seconds: 2));
   }
 
   /// Opens the signed websocket to ws://ip:port/drive.
@@ -178,8 +253,14 @@ class ManualDrive {
           '${info.ssid != null ? ' ("${info.ssid}")' : ''}?');
     } on SocketException catch (e) {
       client.close(force: true);
-      throw ManualDriveException('Could not reach the robot at ${info.ip}:${info.port} (${e.message}). '
-          'Is your phone on the same Wi-Fi as the robot?');
+      final refused = e.osError?.errorCode == 111 || // Linux/Android ECONNREFUSED
+          e.osError?.errorCode == 61 || // iOS/macOS
+          e.osError?.errorCode == 10061 || // Windows
+          '${e.message} ${e.osError?.message}'.toLowerCase().contains('refused');
+      throw ManualDriveException(
+          'Could not reach the robot at ${info.ip}:${info.port} (${e.osError?.message ?? e.message}). '
+          'Is your phone on the same Wi-Fi as the robot?',
+          refused: refused);
     } on HttpException catch (e) {
       client.close(force: true);
       throw ManualDriveException('The robot refused the connection (${e.message}).');

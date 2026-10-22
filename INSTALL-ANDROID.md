@@ -74,10 +74,14 @@ It prints the serial number and the key on one line - paste the key (the part af
 **Windows 11:** the same command works in PowerShell. In File Explorer, open the folder with Vacuula's `docker-compose.yaml`, right-click inside it and choose *Open in Terminal*, then paste the command. Make sure Docker Desktop is running.
 
 If it doesn't work:
-- *"no configuration file provided"* or *"service vacuula is not running"*: you are in the wrong folder, or the service has another name. Run `docker ps`, find the Vacuula container name in the last column, and use `docker exec <container-name> python -c "..."` with the same part in quotes.
+- *"no configuration file provided"* or *"service vacuula is not running"* (often with *Using name "system32"*): PowerShell is not in Vacuula's folder. Use this version instead - it finds the Vacuula container by itself and works from any folder (PowerShell, Mac and Linux):
+
+  ```
+  docker exec $(docker ps -q --filter "label=com.docker.compose.service=vacuula") python -c "import sqlite3; [print(r[0], r[1]) for r in sqlite3.connect('/server/data/vacuula.db').execute('select robot, password from gen3__data')]"
+  ```
 - No lines are printed: the robot is not a Gen3 model (Botvac Connected, D3–D7), or it hasn't been set up with the Vacuula server yet.
 
-Your phone must be on the same Wi-Fi as the robot, and the robot must be idle. Hold an arrow to move, let go to stop, and use the red **STOP** button at any time.
+Your phone must be on the same Wi-Fi as the robot, and the robot must be idle. Hold an arrow to move, let go to stop, and use the red **STOP** button at any time. If an earlier remote-control session is stuck on the robot, the app ends it by itself and tries again (it never stops a real cleaning).
 
 ## Updating to a new test version
 

@@ -35,6 +35,7 @@ class _ManualScreenState extends State<ManualScreen> {
   ManualDrive? _drive;
   String? _error;
   String? _lastMessage;
+  String? _progress;
   StreamSubscription<String>? _msgSub;
   DriveCombo? _held;
 
@@ -66,9 +67,13 @@ class _ManualScreenState extends State<ManualScreen> {
     setState(() {
       _phase = _Phase.connecting;
       _error = null;
+      _progress = null;
     });
     try {
-      final d = await ManualDrive.connect(widget.api, widget.robot, key);
+      final d = await ManualDrive.connect(widget.api, widget.robot, key,
+          onProgress: (m) {
+        if (mounted) setState(() => _progress = m);
+      });
       if (!mounted) {
         await d.close();
         return;
@@ -235,6 +240,10 @@ class _ManualScreenState extends State<ManualScreen> {
             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
             : const Icon(Icons.play_arrow_rounded),
         label: Text(connecting ? 'Connecting…' : 'Start remote control'),
+      ),
+      if (connecting && _progress != null) Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(_progress!, textAlign: TextAlign.center, style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
       ),
       if (_error != null) ...[
         const SizedBox(height: 16),
