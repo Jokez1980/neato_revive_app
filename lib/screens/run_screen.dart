@@ -69,60 +69,107 @@ class _RunScreenState extends State<RunScreen> {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     Widget row(String k, String v, {Color? color}) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 130, child: Text(k, style: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
-            Expanded(child: Text(v, style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w600))),
-          ]),
-        );
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(k, style: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          ),
+          Expanded(
+            child: Text(
+              v,
+              style: t.bodyMedium?.copyWith(color: color, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(formatDateTime(r.start))),
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 8, 16, 32), children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            color: mapBackground,
-            child: _loading
-                ? const SizedBox(height: 240, child: Center(child: CircularProgressIndicator()))
-                : _picture == null
-                    ? SizedBox(
-                        height: 120,
-                        child: Center(
-                          child: Text(_mapNote ?? '', style: t.bodyMedium?.copyWith(color: Colors.white70)),
-                        ),
-                      )
-                    : _MapView(picture: _picture!),
-          ),
-        ),
-        if (_picture != null)
+      // The map sits outside the scrolling list, so pinch-zoom on the map is
+      // not taken over by the list's scrolling.
+      body: Column(
+        children: [
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(children: [
-              Container(width: 14, height: 14, decoration: BoxDecoration(color: _pathColor, borderRadius: BorderRadius.circular(3))),
-              const SizedBox(width: 6),
-              Text('Where it cleaned', style: t.bodySmall),
-              const SizedBox(width: 16),
-              Container(width: 14, height: 14, decoration: BoxDecoration(color: mapWall, borderRadius: BorderRadius.circular(3))),
-              const SizedBox(width: 6),
-              Text('Walls', style: t.bodySmall),
-              const Spacer(),
-              Text('Pinch to zoom', style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-            ]),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    color: mapBackground,
+                    child: _loading
+                        ? const SizedBox(height: 240, child: Center(child: CircularProgressIndicator()))
+                        : _picture == null
+                        ? SizedBox(
+                            height: 120,
+                            child: Center(
+                              child: Text(_mapNote ?? '', style: t.bodyMedium?.copyWith(color: Colors.white70)),
+                            ),
+                          )
+                        : _MapView(picture: _picture!),
+                  ),
+                ),
+                if (_picture != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(color: _pathColor, borderRadius: BorderRadius.circular(3)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text('Where it cleaned', style: t.bodySmall),
+                        const SizedBox(width: 16),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(color: mapWall, borderRadius: BorderRadius.circular(3)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text('Walls', style: t.bodySmall),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              fullscreenDialog: true,
+                              builder: (_) => _FullMap(picture: _picture!, title: formatDateTime(r.start)),
+                            ),
+                          ),
+                          icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                          label: const Text('Full screen'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
-        const SizedBox(height: 16),
-        row('Result', r.complete ? 'Completed' : _pretty(r.status), color: r.complete ? cs.primary : cs.error),
-        if (r.error != null) row('Problem', problemText(r.error!), color: cs.error),
-        row('Started', formatDateTime(r.start)),
-        row('Ended', formatDateTime(r.end)),
-        row('Duration', formatDuration(r.duration)),
-        row('Area', formatArea(r.areaM2)),
-        if (r.batteryUsed != null) row('Battery used', '${r.batteryUsed} %'),
-        if (r.settings != null) row('Settings', r.settings!),
-        if (r.startedBy != null) row('Started from', _pretty(r.startedBy!)),
-        row('Recharges', '${r.chargeStops}'),
-        row('Picked up', '${r.pickups} ${r.pickups == 1 ? 'time' : 'times'}'),
-      ]),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              children: [
+                row('Result', r.complete ? 'Completed' : _pretty(r.status), color: r.complete ? cs.primary : cs.error),
+                if (r.error != null) row('Problem', problemText(r.error!), color: cs.error),
+                row('Started', formatDateTime(r.start)),
+                row('Ended', formatDateTime(r.end)),
+                row('Duration', formatDuration(r.duration)),
+                row('Area', formatArea(r.areaM2)),
+                if (r.batteryUsed != null) row('Battery used', '${r.batteryUsed} %'),
+                if (r.settings != null) row('Settings', r.settings!),
+                if (r.startedBy != null) row('Started from', _pretty(r.startedBy!)),
+                row('Recharges', '${r.chargeStops}'),
+                row('Picked up', '${r.pickups} ${r.pickups == 1 ? 'time' : 'times'}'),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -140,27 +187,73 @@ class _MapView extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = picture;
     final ratio = p.image.width / p.image.height;
-    return LayoutBuilder(builder: (context, c) {
-      final maxH = MediaQuery.of(context).size.height * 0.55;
-      var w = c.maxWidth, h = w / ratio;
-      if (h > maxH) {
-        h = maxH;
-        w = h * ratio;
-      }
-      return SizedBox(
-        height: h,
-        child: InteractiveViewer(
-          maxScale: 8,
-          child: Center(
-            child: SizedBox(
-              width: w,
-              height: h,
-              child: CustomPaint(painter: _RunPainter(p)),
+    return LayoutBuilder(
+      builder: (context, c) {
+        final maxH = MediaQuery.of(context).size.height * 0.42;
+        var w = c.maxWidth, h = w / ratio;
+        if (h > maxH) {
+          h = maxH;
+          w = h * ratio;
+        }
+        return SizedBox(
+          height: h,
+          child: InteractiveViewer(
+            maxScale: 10,
+            boundaryMargin: const EdgeInsets.all(60),
+            child: Center(
+              child: SizedBox(
+                width: w,
+                height: h,
+                child: CustomPaint(painter: _RunPainter(p)),
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+/// The map on its own page, as big as the screen allows.
+class _FullMap extends StatelessWidget {
+  const _FullMap({required this.picture, required this.title});
+  final _RunPicture picture;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = picture;
+    return Scaffold(
+      backgroundColor: mapBackground,
+      appBar: AppBar(title: Text(title), backgroundColor: mapBackground, foregroundColor: Colors.white),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final ratio = p.image.width / p.image.height;
+            var w = c.maxWidth, h = w / ratio;
+            if (h > c.maxHeight) {
+              h = c.maxHeight;
+              w = h * ratio;
+            }
+            return InteractiveViewer(
+              maxScale: 12,
+              boundaryMargin: const EdgeInsets.all(100),
+              child: SizedBox(
+                width: c.maxWidth,
+                height: c.maxHeight,
+                child: Center(
+                  child: SizedBox(
+                    width: w,
+                    height: h,
+                    child: CustomPaint(painter: _RunPainter(p)),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
-      );
-    });
+      ),
+    );
   }
 }
 
@@ -210,12 +303,14 @@ class _RunPicture {
     if (gen3) {
       ignore.addAll(const [100, 128, 200]);
     } else if (p != null) {
-      final distinct = <int>{for (final v in p) if (v != 0) v}.toList()..sort((a, b) => b.compareTo(a));
+      final distinct = <int>{
+        for (final v in p)
+          if (v != 0) v,
+      }.toList()..sort((a, b) => b.compareTo(a));
       ignore.addAll(distinct.take(1));
     }
 
-    bool used(int i) =>
-        (!pathOnly && floor.cells[i] != 0) || (p != null && p[i] != 0 && !ignore.contains(p[i]));
+    bool used(int i) => (!pathOnly && floor.cells[i] != 0) || (p != null && p[i] != 0 && !ignore.contains(p[i]));
 
     var minX = w, minY = h, maxX = -1, maxY = -1;
     for (var y = 0; y < h; y++) {
