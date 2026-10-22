@@ -31,6 +31,8 @@ The first time, the app opens **Settings**:
 
 Your robot now shows up with its status and battery.
 
+Tap the line under **Start cleaning** (for example *Map · Turbo*) to choose **where** (Map / Whole house / Spot), **suction** (Eco / Turbo) and **navigation** (Normal / Extra care / Deep). Use **Map** if you want the robot to respect your no-go lines.
+
 ## 3. Turn on notifications (optional)
 
 Get a notification when the robot starts, recharges in the middle of a clean, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline.
@@ -58,6 +60,16 @@ Tap **Maps, no-go lines & zones** on the robot card and pick a map.
 ## 5. Schedule
 
 Tap **Schedule** on the robot card. Tap **+ Add**, pick days, time, cleaning mode and (optionally) a zone, and **Save**. Tap a cleaning to change or delete it. The robot must be online. Times are shown in your phone's time zone.
+
+## 6. Remote control (D3–D7, experimental)
+
+If your robot supports it, its card has a **Drive** button. The first time, the app asks for the robot's secret key. Ask the person running the Vacuula server to run this in the server folder and send you the key for your robot:
+
+```bash
+docker compose exec vacuula python -c "import sqlite3; [print(r[0], r[1]) for r in sqlite3.connect('/server/data/vacuula.db').execute('select robot, password from gen3__data')]"
+```
+
+Your phone must be on the same Wi-Fi as the robot, and the robot must be idle. Hold an arrow to move, let go to stop, and use the red **STOP** button at any time.
 
 ## Updating to a new test version
 

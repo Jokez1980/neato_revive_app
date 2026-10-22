@@ -12,13 +12,23 @@ import 'api.dart';
 class AppSettings extends ChangeNotifier {
   AppSettings._(this._file, Map<String, dynamic> data)
       : _server = (data[_kServer] as String?) ?? _defaultServer,
-        _gen3Mode = (data[_kGen3] as int?) ?? 2,
-        _gen4Mode = (data[_kGen4] as String?) ?? 'auto',
-        _notifications = (data[_kNotify] as bool?) ?? false;
+        _cleaning = data[_kCleaning] is Map
+            ? CleaningPrefs.fromJson((data[_kCleaning] as Map).cast<String, dynamic>())
+            // older versions only stored the suction modes
+            : CleaningPrefs.fromJson({
+                if (data['gen3mode'] is int) 'gen3Mode': data['gen3mode'],
+                if (data['gen4mode'] is String) 'gen4Mode': data['gen4mode'],
+              }),
+        _notifications = (data[_kNotify] as bool?) ?? false,
+        _manualKeys = {
+          if (data[_kManualKeys] is Map)
+            for (final e in (data[_kManualKeys] as Map).entries)
+              if (e.key is String && e.value is String) e.key as String: e.value as String,
+        };
 
   static const _kServer = 'server';
-  static const _kGen3 = 'gen3mode';
-  static const _kGen4 = 'gen4mode';
+  static const _kCleaning = 'cleaning';
+  static const _kManualKeys = 'manualKeys';
   static const _kNotify = 'notifications';
 
   /// Fast serveradress som byggs in i appen, t.ex.
@@ -29,8 +39,8 @@ class AppSettings extends ChangeNotifier {
 
   final File? _file;
   String _server;
-  int _gen3Mode;
-  String _gen4Mode;
+  CleaningPrefs _cleaning;
+  final Map<String, String> _manualKeys;
   bool _notifications;
 
   /// Appens egen, privata mapp.
@@ -68,33 +78,50 @@ class AppSettings extends ChangeNotifier {
   }
 
   String get server => _server;
-  int get gen3Mode => _gen3Mode;
-  String get gen4Mode => _gen4Mode;
   bool get notifications => _notifications;
   bool get hasServer => _server.isNotEmpty;
 
-  CleaningPrefs get cleaning =>
-      CleaningPrefs(gen3Mode: _gen3Mode, gen4Mode: _gen4Mode);
+  /// How cleanings are started (area, suction, navigation…).
+  CleaningPrefs get cleaning => _cleaning;
 
+  /// Saves server and notification settings and tells listeners (the app reconnects).
   Future<void> save({
     required String server,
-    required int gen3Mode,
-    required String gen4Mode,
     required bool notifications,
   }) async {
     _server = VacuulaApi.normalizeUrl(server);
-    _gen3Mode = gen3Mode;
-    _gen4Mode = gen4Mode;
     _notifications = notifications;
     notifyListeners();
+    await _write();
+  }
+
+  /// Gen3 robot secret key for remote control (manual driving), per serial.
+  String? manualKey(String serial) => _manualKeys[serial];
+
+  Future<void> setManualKey(String serial, String? key) async {
+    if (key == null || key.trim().isEmpty) {
+      _manualKeys.remove(serial);
+    } else {
+      _manualKeys[serial] = key.trim();
+    }
+    await _write();
+  }
+
+  /// Saves the cleaning choices. Does not notify listeners (no reconnect needed).
+  Future<void> setCleaning(CleaningPrefs p) async {
+    _cleaning = p;
+    await _write();
+  }
+
+  Future<void> _write() async {
     final file = _file;
     if (file == null) return;
     try {
       final tmp = File('${file.path}.tmp');
       await tmp.writeAsString(jsonEncode({
         _kServer: _server,
-        _kGen3: _gen3Mode,
-        _kGen4: _gen4Mode,
+        _kCleaning: _cleaning.toJson(),
+        _kManualKeys: _manualKeys,
         _kNotify: _notifications,
       }), flush: true);
       await tmp.rename(file.path);

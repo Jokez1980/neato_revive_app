@@ -297,7 +297,7 @@ extension MapApi on VacuulaApi {
         'runs': [
           {
             'map': {'rank_id': map.id, 'track_id': zone.id, 'nogo_enabled': true},
-            'settings': {'mode': p.gen4Mode, 'navigation_mode': 'normal'},
+            'settings': {'mode': p.gen4Mode, 'navigation_mode': p.gen4Nav},
           }
         ],
       });
@@ -305,7 +305,13 @@ extension MapApi on VacuulaApi {
     }
     await command(r.serial, {
       'cmd': 'startCleaning',
-      'params': {'category': 4, 'mode': p.gen3Mode, 'navigationMode': 1, 'mapId': map.id, 'boundaryId': zone.id},
+      'params': {
+        'category': 4,
+        'mode': p.gen3EffectiveMode,
+        'navigationMode': p.gen3Nav,
+        'mapId': map.id,
+        'boundaryId': zone.id,
+      },
     });
   }
 

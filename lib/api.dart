@@ -72,6 +72,7 @@ class RobotStatus {
     this.can = const RobotCaps(),
     this.error,
     this.alert,
+    this.manualSupported = false,
   });
 
   /// idle, busy, paused, error, invalid
@@ -85,6 +86,9 @@ class RobotStatus {
   final RobotCaps can;
   final String? error;
   final String? alert;
+
+  /// Gen3: the robot offers remote control (availableServices.manualCleaning).
+  final bool manualSupported;
 
   bool get isActive => state == 'busy' || state == 'paused';
 
@@ -142,6 +146,9 @@ class RobotStatus {
       ),
       error: _str(j['error']),
       alert: _str(j['alert']),
+      manualSupported: j['availableServices'] is Map &&
+          ((j['availableServices'] as Map)['manualCleaning'] is String) &&
+          ((j['availableServices'] as Map)['manualCleaning'] as String).isNotEmpty,
     );
   }
 
@@ -186,14 +193,114 @@ class RobotStatus {
 enum RobotCommand { start, resume, pause, stop, base, find }
 
 /// Städinställningar som skickas med "Starta".
+/// How a cleaning is started - the same choices as the Vacuula web app.
 class CleaningPrefs {
-  const CleaningPrefs({this.gen3Mode = 2, this.gen4Mode = 'auto'});
+  const CleaningPrefs({
+    this.gen3Mode = 2,
+    this.gen3Nav = 1,
+    this.gen3Area = 'map',
+    this.spotWidth = 200,
+    this.spotHeight = 200,
+    this.gen4Mode = 'auto',
+    this.gen4Nav = 'normal',
+    this.gen4UseMap = true,
+  });
 
-  /// Gen3: 1 = Eco, 2 = Normal
+  /// Gen3 suction: 1 = Eco, 2 = Turbo (called "Normal" in the Vacuula web app)
   final int gen3Mode;
 
-  /// Gen4: auto, eco, turbo, max
+  /// Gen3 navigation: 1 = Normal, 2 = Extra care, 3 = Deep (Deep needs Turbo suction)
+  final int gen3Nav;
+
+  /// Gen3 area: 'map' (uses the map: no-go lines and zones respected, robot must
+  /// start from the base), 'house' (everything it can reach, ignores no-go lines)
+  /// or 'spot' (a rectangle around the robot).
+  final String gen3Area;
+
+  /// Gen3 spot size in cm (100-400)
+  final int spotWidth;
+  final int spotHeight;
+
+  /// Gen4: eco, turbo, auto, max
   final String gen4Mode;
+
+  /// Gen4: normal, gentle
+  final String gen4Nav;
+
+  /// Gen4: use the floorplan in use (no-go lines/zones respected)
+  final bool gen4UseMap;
+
+  CleaningPrefs copyWith({
+    int? gen3Mode,
+    int? gen3Nav,
+    String? gen3Area,
+    int? spotWidth,
+    int? spotHeight,
+    String? gen4Mode,
+    String? gen4Nav,
+    bool? gen4UseMap,
+  }) =>
+      CleaningPrefs(
+        gen3Mode: gen3Mode ?? this.gen3Mode,
+        gen3Nav: gen3Nav ?? this.gen3Nav,
+        gen3Area: gen3Area ?? this.gen3Area,
+        spotWidth: spotWidth ?? this.spotWidth,
+        spotHeight: spotHeight ?? this.spotHeight,
+        gen4Mode: gen4Mode ?? this.gen4Mode,
+        gen4Nav: gen4Nav ?? this.gen4Nav,
+        gen4UseMap: gen4UseMap ?? this.gen4UseMap,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'gen3Mode': gen3Mode,
+        'gen3Nav': gen3Nav,
+        'gen3Area': gen3Area,
+        'spotWidth': spotWidth,
+        'spotHeight': spotHeight,
+        'gen4Mode': gen4Mode,
+        'gen4Nav': gen4Nav,
+        'gen4UseMap': gen4UseMap,
+      };
+
+  factory CleaningPrefs.fromJson(Map<String, dynamic> j) {
+    const d = CleaningPrefs();
+    int i(String k, int def, int min, int max) =>
+        j[k] is num ? (j[k] as num).toInt().clamp(min, max) : def;
+    String s(String k, String def, List<String> ok) => ok.contains(j[k]) ? j[k] as String : def;
+    return CleaningPrefs(
+      gen3Mode: i('gen3Mode', d.gen3Mode, 1, 2),
+      gen3Nav: i('gen3Nav', d.gen3Nav, 1, 3),
+      gen3Area: s('gen3Area', d.gen3Area, const ['map', 'house', 'spot']),
+      spotWidth: i('spotWidth', d.spotWidth, 100, 400),
+      spotHeight: i('spotHeight', d.spotHeight, 100, 400),
+      gen4Mode: s('gen4Mode', d.gen4Mode, const ['eco', 'turbo', 'auto', 'max']),
+      gen4Nav: s('gen4Nav', d.gen4Nav, const ['normal', 'gentle']),
+      gen4UseMap: j['gen4UseMap'] is bool ? j['gen4UseMap'] as bool : d.gen4UseMap,
+    );
+  }
+
+  /// Gen3 suction actually sent: Deep navigation only works with Turbo suction.
+  int get gen3EffectiveMode => gen3Nav == 3 ? 2 : gen3Mode;
+
+  static const gen3ModeNames = {1: 'Eco', 2: 'Turbo'};
+  static const gen3NavNames = {1: 'Normal', 2: 'Extra care', 3: 'Deep'};
+  static const gen3AreaNames = {'map': 'Map', 'house': 'Whole house', 'spot': 'Spot'};
+  static const gen4ModeNames = {'auto': 'Auto', 'eco': 'Eco', 'turbo': 'Turbo', 'max': 'Max'};
+  static const gen4NavNames = {'normal': 'Normal', 'gentle': 'Gentle'};
+
+  /// Short summary for the robot card, e.g. "Map · Normal · Deep".
+  String summary(RobotGen gen) => gen == RobotGen.gen4
+      ? [
+          gen4UseMap ? 'Floorplan' : 'Whole home',
+          gen4ModeNames[gen4Mode],
+          if (gen4Nav != 'normal') gen4NavNames[gen4Nav],
+        ].join(' · ')
+      : [
+          gen3AreaNames[gen3Area],
+          if (gen3Area == 'spot') '${spotWidth}x$spotHeight cm',
+          gen3ModeNames[gen3EffectiveMode],
+          if (gen3Nav != 1) gen3NavNames[gen3Nav],
+        ].join(' · ');
 }
 
 class ApiException implements Exception {
@@ -317,15 +424,12 @@ class VacuulaApi {
   }
 
   /// Kommandon enligt Vacuulas webbapp (app/src/http/gen3.ts och gen4.ts).
-  Future<void> run(RobotInfo r, RobotCommand c, CleaningPrefs p) async {
+  /// [docked]: the robot is on its base (Gen3 "map" cleaning must start from there).
+  Future<void> run(RobotInfo r, RobotCommand c, CleaningPrefs p, {bool docked = true}) async {
     final Map<String, dynamic> body;
     if (r.gen == RobotGen.gen3) {
       body = switch (c) {
-        RobotCommand.start => {
-            'cmd': 'startCleaning',
-            // category 2 = hela hemmet, navigationMode 1 = normal
-            'params': {'category': 2, 'mode': p.gen3Mode, 'navigationMode': 1},
-          },
+        RobotCommand.start => {'cmd': 'startCleaning', 'params': gen3StartParams(p, docked: docked)},
         RobotCommand.resume => {'cmd': 'resumeCleaning'},
         RobotCommand.pause => {'cmd': 'pauseCleaning'},
         RobotCommand.stop => {'cmd': 'stopCleaning'},
@@ -336,11 +440,12 @@ class VacuulaApi {
       body = switch (c) {
         RobotCommand.start => {
             'ability': 'cleaning.start',
-            // map: null = städa allt roboten kommer åt
+            // map: null = clean everything it can reach; with the floorplan in use
+            // no-go lines and zones are respected
             'runs': [
               {
-                'map': null,
-                'settings': {'mode': p.gen4Mode, 'navigation_mode': 'normal'},
+                'map': p.gen4UseMap ? await _gen4FloorplanRun(r) : null,
+                'settings': {'mode': p.gen4Mode, 'navigation_mode': p.gen4Nav},
               }
             ],
           },
@@ -354,5 +459,29 @@ class VacuulaApi {
       throw ApiException('This robot type is not supported');
     }
     await command(r.serial, body);
+  }
+
+  /// Gen3 startCleaning params (category 2 = house, 3 = spot, 4 = map).
+  static Map<String, dynamic> gen3StartParams(CleaningPrefs p, {bool docked = true}) {
+    final area = (p.gen3Area == 'map' && !docked) ? 'house' : p.gen3Area;
+    return {
+      'category': switch (area) { 'spot' => 3, 'map' => 4, _ => 2 },
+      'mode': p.gen3EffectiveMode,
+      'navigationMode': p.gen3Nav,
+      if (area == 'spot') ...{'spotWidth': p.spotWidth, 'spotHeight': p.spotHeight},
+    };
+  }
+
+  /// Gen4: the promoted floorplan to clean with, or null when there is none.
+  Future<Map<String, dynamic>?> _gen4FloorplanRun(RobotInfo r) async {
+    try {
+      final maps = await getJson('/robot/${Uri.encodeComponent(r.serial)}/maps');
+      for (final m in (maps is List ? maps : const [])) {
+        if (m is Map && m['promoted'] == true && m['id'] is String) {
+          return {'rank_id': m['id'], 'track_id': null, 'nogo_enabled': true};
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 }

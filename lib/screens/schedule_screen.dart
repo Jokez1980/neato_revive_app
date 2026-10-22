@@ -138,10 +138,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           mode: existing?.mode == 1 ? 'eco' : 'normal',
           zoneIds: {if (existing?.boundaryId != null) existing!.boundaryId!},
         ),
-        modes: const {'normal': 'Normal', 'eco': 'Eco'},
+        modes: const {'normal': 'Turbo', 'eco': 'Eco'},
         zones: _zones,
         multiZone: false,
-        timeHint: 'Times are in your phone\'s time zone ($_offsetLabel).',
+        timeHint: 'Times are in your phone\'s time zone ($_offsetLabel). '
+            'D3-D7 schedules store suction and zone only - navigation (Extra care/Deep) is not part of a scheduled cleaning on these robots.',
         onDelete: existing == null ? null : () => Navigator.pop(context, _EventForm.deleted),
       ),
     );
@@ -205,7 +206,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   leading: CircleAvatar(child: Text(weekdayShort[it.l.day].substring(0, 2))),
                   title: Text('${weekdayNames[it.l.day]}  ${it.l.time}'),
                   subtitle: Text(
-                      '${it.e.mode == 1 ? 'Eco' : 'Normal'} · ${_zoneName(it.e.boundaryId, it.e.boundaryName)}'),
+                      '${it.e.mode == 1 ? 'Eco' : 'Turbo'} · ${_zoneName(it.e.boundaryId, it.e.boundaryName)}'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: _busy ? null : () => _editGen3(it.i),
                 ),

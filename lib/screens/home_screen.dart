@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../settings.dart';
 import '../watch.dart';
+import '../widgets/cleaning_options_sheet.dart';
 import '../widgets/robot_card.dart';
+import 'manual_screen.dart';
 import 'maps_screen.dart';
 import 'schedule_screen.dart';
 import 'settings_screen.dart';
@@ -147,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final errorColor = Theme.of(context).colorScheme.error;
     setState(() => _busy[robot.serial] = cmd);
     try {
-      await api.run(robot, cmd, settings.cleaning);
+      await api.run(robot, cmd, settings.cleaning, docked: _status[robot.serial]?.docked ?? true);
       messenger.showSnackBar(SnackBar(content: Text(_doneText[cmd]!)));
     } catch (e) {
       messenger.showSnackBar(SnackBar(
@@ -160,6 +162,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Ge roboten en stund att byta läge innan vi frågar igen
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     if (mounted) _refresh();
+  }
+
+  String _optionsSummary(RobotInfo r) {
+    final p = settings.cleaning;
+    final s = p.summary(r.gen);
+    final docked = _status[r.serial]?.docked ?? true;
+    // Gen3 "map" cleaning only works from the base
+    if (r.gen == RobotGen.gen3 && p.gen3Area == 'map' && !docked) {
+      return '$s (not on base: whole house)';
+    }
+    return s;
+  }
+
+  Future<void> _editOptions(RobotInfo r) async {
+    final s = _status[r.serial];
+    final result = await showCleaningOptions(
+      context,
+      gen: r.gen,
+      prefs: settings.cleaning,
+      canStart: r.connected && (s?.can.start ?? false),
+    );
+    if (result == null) return;
+    await settings.setCleaning(result.prefs);
+    if (!mounted) return;
+    setState(() {});
+    if (result.start) await _run(r, RobotCommand.start);
   }
 
   Future<void> _openSettings() async {
@@ -297,6 +325,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             status: _status[r.serial],
             busy: _busy[r.serial],
             onCommand: (c) => _run(r, c),
+            optionsSummary: r.gen == RobotGen.unknown ? null : _optionsSummary(r),
+            onOptions: () => _editOptions(r),
             onMaps: _api == null || r.gen == RobotGen.unknown
                 ? null
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(
@@ -306,6 +336,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ? null
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(
                       builder: (_) => ScheduleScreen(api: _api!, robot: r),
+                    )),
+            onDrive: _api == null || !r.connected || !(_status[r.serial]?.manualSupported ?? false)
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => ManualScreen(api: _api!, robot: r, settings: settings),
                     )),
           ),
         ),

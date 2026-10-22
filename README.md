@@ -6,8 +6,9 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 - Start, pause/resume, stop, send to base and "Find me".
 - Status and battery for all robots, using the same state names as the Vacuula web app. Refreshes every 10 seconds, or every 4 seconds while the robot is busy. Pull down to refresh right away.
 - **Search network**: finds the Vacuula server automatically, even when mDNS does not work (for example Docker on a Mac).
-- Cleaning mode per generation: Gen3 Normal/Eco, Gen4 Auto/Eco/Turbo/Max.
+- **Cleaning options** (tap the line under *Start cleaning*): where (Gen3: **Map** - respects no-go lines, **Whole house** or **Spot** with size; Gen4: floorplan or whole home), suction (Gen3: Eco/Turbo; Gen4: Auto/Eco/Turbo/Max) and navigation (Gen3: Normal/Extra care/Deep; Gen4: Normal/Gentle). Your choice is remembered. Note: *Whole house* ignores no-go lines - use *Map* for that.
 - **Maps**: view your robot's maps, rename them, switch them on/off, start mapping a new one. Draw **no-go lines**, **no-go areas** and **cleaning zones** with your finger, change or delete them, switch them off and on, and clean a single zone. Changes are saved to the robot/server right away, exactly like the Vacuula web app.
+- **Remote control** (D3–D7, experimental): drive the robot with arrows on the phone.
 - **Schedule**: see, add, change and delete scheduled cleanings - days, time, cleaning mode and (optionally) a zone. Gen3 schedules can be switched on/off as a whole; Gen4 events one by one.
 - **Notifications (Android)** when a robot starts, recharges mid-clean, pauses, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline. Turn on in Settings > Notifications.
 - Light and dark mode. App icon made from the Vacuula logo.
@@ -85,6 +86,19 @@ Tap **Schedule** on a robot card (the robot must be online - the schedule lives 
 - Gen3: the switch at the top turns the whole schedule on/off. The robot keeps times in UTC; the app shows and edits them in your phone's time zone. After a daylight saving change the times move by an hour - edit them again if needed.
 - Gen4: each cleaning has its own on/off switch; you can choose navigation mode and, with a floorplan in use, one or more zones.
 
+## Remote control (D3–D7, experimental)
+Botvac Connected and D3–D7 robots that support it get a **Drive** button on their card. It works like the remote control in the old Neato app: hold an arrow to move, let go to stop. You can also switch the brush, the vacuum and Eco on and off.
+
+The app talks **directly to the robot** for this, so the phone must be on the same Wi-Fi as the robot. The robot only accepts a connection that is signed with its secret key. The Vacuula server knows the key, and you copy it into the app once. Run this on the computer with Vacuula, in the folder with its `docker-compose.yaml`:
+
+```bash
+docker compose exec vacuula python -c "import sqlite3; [print(r[0], r[1]) for r in sqlite3.connect('/server/data/vacuula.db').execute('select robot, password from gen3__data')]"
+```
+
+It prints `serial key` for each Gen3 robot. Paste the key for your robot into the app; the app stores it only on the phone. The robot must be idle (not cleaning). It leaves remote control by itself after about 30 seconds without commands.
+
+This has been tested against a simulated robot, not yet against a real D7. If it doesn't connect, please report what the app shows.
+
 ## Away from home
 Vacuula has no login, so never expose its port to the internet. Use a VPN into your home network instead, for example Tailscale (free), and enter the server's Tailscale address (100.x.x.x) in the app.
 
@@ -100,6 +114,7 @@ Vacuula has no login, so never expose its port to the internet. Use a VPN into y
 - `lib/map/map_painter.dart`: draws the map, zones, lines and the base.
 - `lib/screens/maps_screen.dart`, `lib/screens/map_editor_screen.dart`: map list and editor.
 - `lib/schedule/schedule_models.dart`, `lib/screens/schedule_screen.dart`: schedule commands (Gen3/Gen4), UTC conversion and the schedule screen.
+- `lib/manual/manual_drive.dart`, `lib/screens/manual_screen.dart`: remote control (signed websocket straight to the robot).
 - `lib/problems.dart`: texts for error codes, same wording as the Vacuula web app.
 - `lib/widgets/robot_card.dart`: the card for each robot.
 - `assets/`: the Vacuula logo and app icon images. To use the red icon instead, change `icon_light.png` to `icon_red.png` and `#ECEAE6` to `#8E0D24` in `pubspec.yaml`, then run `dart run flutter_launcher_icons`.

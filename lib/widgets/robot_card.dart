@@ -57,6 +57,9 @@ class RobotCard extends StatelessWidget {
     required this.onCommand,
     this.onMaps,
     this.onSchedule,
+    this.onDrive,
+    this.optionsSummary,
+    this.onOptions,
   });
 
   final RobotInfo robot;
@@ -69,6 +72,13 @@ class RobotCard extends StatelessWidget {
 
   /// Opens the cleaning schedule of this robot (no button when null).
   final VoidCallback? onSchedule;
+
+  /// Opens remote control (manual driving, D3-D7 only; no button when null).
+  final VoidCallback? onDrive;
+
+  /// Current cleaning choices, e.g. "Map · Normal · Deep" (tap to change).
+  final String? optionsSummary;
+  final VoidCallback? onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +171,14 @@ class RobotCard extends StatelessWidget {
                 label: Text(paused ? 'Resume' : 'Start cleaning'),
               ),
             ),
-            const SizedBox(height: 10),
+            if (optionsSummary != null && !paused)
+              TextButton.icon(
+                onPressed: onOptions,
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                label: Text(optionsSummary!, overflow: TextOverflow.ellipsis),
+              )
+            else
+              const SizedBox(height: 10),
             Row(children: [
               _SmallButton(
                 label: 'Pause',
@@ -190,7 +207,7 @@ class RobotCard extends StatelessWidget {
                 onPressed: enabled(true) ? () => onCommand(RobotCommand.find) : null,
               ),
             ]),
-            if (onMaps != null || onSchedule != null) ...[
+            if (onMaps != null || onSchedule != null || onDrive != null) ...[
               const SizedBox(height: 6),
               Row(children: [
                 if (onMaps != null)
@@ -198,7 +215,7 @@ class RobotCard extends StatelessWidget {
                     child: TextButton.icon(
                       onPressed: onMaps,
                       icon: const Icon(Icons.map_outlined),
-                      label: const Text('Maps & zones'),
+                      label: const Text('Maps'),
                     ),
                   ),
                 if (onSchedule != null)
@@ -207,6 +224,14 @@ class RobotCard extends StatelessWidget {
                       onPressed: onSchedule,
                       icon: const Icon(Icons.event_repeat_rounded),
                       label: const Text('Schedule'),
+                    ),
+                  ),
+                if (onDrive != null)
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onDrive,
+                      icon: const Icon(Icons.sports_esports_outlined),
+                      label: const Text('Drive'),
                     ),
                   ),
               ]),

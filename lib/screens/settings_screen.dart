@@ -19,8 +19,6 @@ enum _TestState { none, testing, ok, failed }
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _server =
       TextEditingController(text: widget.settings.server);
-  late int _gen3Mode = widget.settings.gen3Mode;
-  late String _gen4Mode = widget.settings.gen4Mode;
   late bool _notifications = widget.settings.notifications;
 
   _TestState _test = _TestState.none;
@@ -97,8 +95,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _save() async {
     await widget.settings.save(
       server: _server.text,
-      gen3Mode: _gen3Mode,
-      gen4Mode: _gen4Mode,
       notifications: _notifications,
     );
     await RobotWatcher.apply(enabled: _notifications, server: widget.settings.server);
@@ -206,26 +202,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
               ),
           ],
-          section('Cleaning mode Gen3 (D3–D7)'),
-          SegmentedButton<int>(
-            segments: const [
-              ButtonSegment(value: 2, label: Text('Normal')),
-              ButtonSegment(value: 1, label: Text('Eco')),
-            ],
-            selected: {_gen3Mode},
-            onSelectionChanged: (s) => setState(() => _gen3Mode = s.first),
-          ),
-          section('Cleaning mode Gen4 (D8–D10)'),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'auto', label: Text('Auto')),
-              ButtonSegment(value: 'eco', label: Text('Eco')),
-              ButtonSegment(value: 'turbo', label: Text('Turbo')),
-              ButtonSegment(value: 'max', label: Text('Max')),
-            ],
-            selected: {_gen4Mode},
-            onSelectionChanged: (s) => setState(() => _gen4Mode = s.first),
-          ),
           if (RobotWatcher.supported) ...[
             section('Notifications'),
             Card(
@@ -255,11 +231,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ]),
             ),
           ],
-          const SizedBox(height: 8),
-          Text(
-            '"Start cleaning" cleans the whole home. Manage zones and maps in the Vacuula web app.',
-            style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
           const SizedBox(height: 28),
           FilledButton(
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
