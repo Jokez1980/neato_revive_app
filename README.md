@@ -7,8 +7,27 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 - Status and battery for all robots, using the same state names as the Vacuula web app. Refreshes every 10 seconds, or every 4 seconds while the robot is busy. Pull down to refresh right away.
 - **Search network**: finds the Vacuula server automatically, even when mDNS does not work (for example Docker on a Mac).
 - Cleaning mode per generation: Gen3 Normal/Eco, Gen4 Auto/Eco/Turbo/Max.
+- **Maps**: view your robot's maps, rename them, switch them on/off, start mapping a new one. Draw **no-go lines** and **zones** with your finger, change or delete them, switch no-go lines off and on, and clean a single zone. Changes are saved to the robot/server right away, exactly like the Vacuula web app.
 - **Notifications (Android)** when a robot starts, recharges mid-clean, pauses, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline. Turn on in Settings > Notifications.
 - Light and dark mode. App icon made from the Vacuula logo.
+
+## Download and install on Android
+
+**Just want to use the app?** You don't need to build anything. The latest Android version (APK file) is in the folder
+**[latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download)** in this project.
+
+You need Android 7.0 or newer, a [Vacuula server](https://github.com/vacuula/vacuula) on your home network with your robot already set up, and your phone on the same Wi-Fi. **No Developer mode or USB debugging is needed.**
+
+1. **Download:** on your phone, open the [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download) folder, tap the `.apk` file and then the **download** button (the arrow ↓ at the top right of the file view, or *Download raw file* in the ⋯ menu).
+2. **Open it:** tap the downloaded file in the browser's downloads or in the *Files* app.
+3. **Allow the install:** Android says this source isn't allowed to install apps. Tap **Settings**, turn on **Allow from this source**, then go back. (You can switch it off again afterwards under *Settings → Apps → Special app access → Install unknown apps*.)
+4. **Install:** tap **Install**. If Google Play Protect warns you, tap **More details → Install anyway** – the warning only appears because the app isn't from Google Play.
+5. **Connect to your server:** open the app and tap **Search network**. If nothing is found, type your server's IP address (for example `192.168.1.50` – the same address you use for the Vacuula web page). Tap **Test**, then **Save**.
+6. **Notifications (optional):** in the app go to **Settings → Notifications → Notify me** and allow notifications. Then set *Android Settings → Apps → Vacuula → Battery* to **Unrestricted** so Android doesn't stop it.
+
+**Updating:** download the newest APK from the same folder and install it on top of the old one – your settings are kept. If Android says *"App not installed"*, uninstall the old Vacuula app first.
+
+More details, phone-specific battery tips and troubleshooting: **[INSTALL-ANDROID.md](INSTALL-ANDROID.md)**.
 
 ## Build and install (on your Mac)
 
@@ -31,7 +50,9 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 
 With a free Apple ID the app stops working after 7 days; just run `flutter run --release` again. With a paid developer account, or via TestFlight, it lasts a year.
 
-**Android:** Enable USB debugging on the phone. You can also build an installable file with `flutter build apk --release`. It ends up in `build/app/outputs/flutter-apk/app-release.apk` and can be sent to the phone.
+**Android:** Enable USB debugging on the phone to run it from your Mac.
+
+**Sharing with testers (APK):** run `./build_apk.sh`. It builds `dist/vacuula-<version>.apk` and prints its SHA-256. Put it in `latest_app_release_to_download/` (remove the old APK) and commit, or send the APK together with **INSTALL-ANDROID.md** (installation guide for testers - they do *not* need Developer mode). Don't build shared APKs with `--dart-define=VACUULA_SERVER=...`; testers find their own server with *Search network*. Bump `version:` in `pubspec.yaml` before each new build, and build on the same Mac so updates install on top of the old version.
 
 ## First start
 If no address was built in, the app opens Settings. Tap **Search network**, or type the server's IP address (for example `192.168.1.250`). Tap **Test**, then **Save**.
@@ -48,6 +69,13 @@ A background watcher then checks your robots every 15 seconds (every 5 while the
 
 Built with the Flutter plugins `flutter_background_service` and `flutter_local_notifications`; `setup.sh` adds the Android permissions and settings they need (`android_extra/patch_android.py`). On iPhone, apps cannot keep running in the background like this, so the switch is hidden there.
 
+## Maps
+Tap **Maps, no-go lines & zones** on a robot card and pick a map.
+- Pinch to zoom, drag to move. Tap a line or zone to select it (Edit / Delete).
+- **Add**: tap the map to place points. **Done** with 2+ points makes a no-go line; tap the first point (or **Close**) to make a zone.
+- Gen3 (D3-D7) stores no-go lines and zones on the robot itself, so it must be connected while you edit.
+- Gen4 (D8-D10): zones are cleaning zones or no-go zones; the floorplan in use is updated automatically.
+
 ## Away from home
 Vacuula has no login, so never expose its port to the internet. Use a VPN into your home network instead, for example Tailscale (free), and enter the server's Tailscale address (100.x.x.x) in the app.
 
@@ -59,6 +87,9 @@ Vacuula has no login, so never expose its port to the internet. Use a VPN into y
 - `lib/watch.dart`: turns the background watcher on/off.
 - `lib/watcher/background.dart`: the background watcher (polls the server, posts notifications).
 - `lib/watcher/robot_events.dart`: decides which status changes deserve a notification (tested in `test/robot_events_test.dart`).
+- `lib/map/map_models.dart`: maps, map grid (RLE decoding), boundaries and the map API calls.
+- `lib/map/map_painter.dart`: draws the map, zones, lines and the base.
+- `lib/screens/maps_screen.dart`, `lib/screens/map_editor_screen.dart`: map list and editor.
 - `lib/problems.dart`: texts for error codes, same wording as the Vacuula web app.
 - `lib/widgets/robot_card.dart`: the card for each robot.
 - `assets/`: the Vacuula logo and app icon images. To use the red icon instead, change `icon_light.png` to `icon_red.png` and `#ECEAE6` to `#8E0D24` in `pubspec.yaml`, then run `dart run flutter_launcher_icons`.

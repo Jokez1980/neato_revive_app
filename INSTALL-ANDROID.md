@@ -1,0 +1,80 @@
+# Vacuula app – installing the test version on Android
+
+Vacuula is an app for controlling a Neato robot vacuum through your own **Vacuula server** (https://github.com/vacuula/vacuula). It lets you start/stop cleaning, see status and battery, edit maps, no-go lines and zones, and get notifications.
+
+This is a test version that is not on Google Play, so you install it from an APK file. **You do not need Developer mode or USB debugging** – that is only for developers building the app.
+
+## What you need
+
+- An Android phone with **Android 7.0 or newer**.
+- A **Vacuula server** running on your home network, with your robot already set up using the Vacuula installer.
+- Your phone on the **same Wi-Fi** as the server (or connected to your home network through a VPN, see below).
+
+## 1. Install the app
+
+1. Get the file **`vacuula-x.y.z.apk`** on your phone. The latest version is in the folder [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download): open it on your phone, tap the `.apk` file and then the **download** button (↓). You can also get it by e-mail, chat, Google Drive or USB cable.
+2. Tap the file to open it. You can find it in the **Files** / **My Files** app under *Downloads*, or in your browser's downloads.
+3. Android will say that this source is not allowed to install apps. Tap **Settings**, turn on **Allow from this source** for that app (Chrome, Files, Gmail…), and go back.
+   - You can turn this off again after installing: *Settings → Apps → Special app access → Install unknown apps*.
+4. Tap **Install**.
+5. If **Google Play Protect** shows a warning ("Unsafe app blocked" or "App scan recommended"), tap **More details → Install anyway** (or **Scan app** and then **Install**). This appears because the app is not from Google Play.
+6. Tap **Open**.
+
+## 2. Connect to your server
+
+The first time, the app opens **Settings**:
+
+1. Tap **Search network**. The app looks for a Vacuula server on your Wi-Fi (takes a few seconds) and fills in the address.
+   - Not found? Type the server's IP address yourself, for example `192.168.1.50`. It is the same address you use for the Vacuula web page in your browser. Add `:port` if your server does not use port 80.
+2. Tap **Test**. It should say *Connected: Vacuula 1.x · 1 robot*.
+3. Tap **Save**.
+
+Your robot now shows up with its status and battery.
+
+## 3. Turn on notifications (optional)
+
+Get a notification when the robot starts, recharges in the middle of a clean, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline.
+
+1. In the app, go to **Settings → Notifications → Notify me**, and tap **Save**.
+2. Allow notifications when Android asks.
+3. **Important for reliability:** *Android Settings → Apps → Vacuula → Battery →* **Unrestricted**.
+   - **Samsung:** also *Settings → Battery → Background usage limits →* make sure Vacuula is not in *Sleeping apps*, or add it to *Never sleeping apps*.
+   - **Xiaomi / Redmi / POCO:** *Settings → Apps → Vacuula →* turn on **Autostart**, and set *Battery saver* to **No restrictions**.
+   - **Huawei / Honor:** *Settings → Battery → App launch → Vacuula →* manage manually and turn everything on.
+
+While notifications are on, Android shows a small silent notification, **"Watching your robots"**. Android requires this for apps working in the background. You can hide it under *Settings → Apps → Vacuula → Notifications → Background watcher*.
+
+Notifications work while your phone can reach the server – at home on Wi-Fi, or through a VPN. Away from home the app waits quietly until it can reach the server again.
+
+## 4. Maps, no-go lines and zones
+
+Tap **Maps, no-go lines & zones** on the robot card and pick a map.
+
+- Pinch to zoom, drag to move the map.
+- **Add** → tap the map to place points → **Done** makes a no-go line. Tap the first point again (or **Close**) to make a zone instead.
+- Tap a line or zone to **Edit** or **Delete** it, switch no-go lines on/off, or **Clean** a single zone.
+- Gen3 robots (D3–D7) keep no-go lines and zones on the robot itself, so the robot must be online while you edit.
+
+## Updating to a new test version
+
+Download the newest APK from [latest_app_release_to_download](https://github.com/Jokez1980/vacuula_app/tree/main/latest_app_release_to_download) and install it on top of the old one – your settings are kept.
+If Android says **"App not installed"** or *"conflicts with an existing package"*, the new file was signed differently: uninstall the old Vacuula app first, then install the new one (you will need to enter the server address again).
+
+## Using it away from home
+
+The Vacuula server has **no password**, so never open it to the internet (no port forwarding in your router). To use the app away from home, install a VPN such as **Tailscale** (free) on both the server and your phone, and enter the server's Tailscale address (`100.x.x.x`) in the app's settings.
+
+## Troubleshooting
+
+| Problem | What to do |
+|---|---|
+| "Cannot reach the server" | Is the phone on the same Wi-Fi as the server (not a guest network)? Is the server running – does the Vacuula web page open in the phone's browser? |
+| "Search network" finds nothing | Type the IP address manually. Some routers block devices from seeing each other ("AP/client isolation") – turn that off for your home Wi-Fi. |
+| Robot shows "Not connected to the server" | The robot is offline: check that it is switched on and on Wi-Fi. Open the Vacuula web page to compare. |
+| No notifications | Check *Settings → Apps → Vacuula → Notifications* is on, battery is **Unrestricted**, and that the "Watching your robots" notification is there. If you used *Force stop*, open the app once to restart it. |
+| Can't edit no-go lines/zones | Gen3 robots must be online while editing. Wait until the robot card shows its status, then try again. |
+| Play Protect removed the app | Install again and choose *Install anyway*. You can also open *Play Store → profile → Play Protect* and allow the app. |
+
+## Feedback
+
+Please report what works and what doesn't – include your phone model, Android version and robot model (for example *Pixel 7, Android 15, Botvac D7*). Screenshots help a lot.
