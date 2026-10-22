@@ -58,6 +58,10 @@ class RobotCard extends StatelessWidget {
     this.onMaps,
     this.onSchedule,
     this.onDrive,
+    this.onHistory,
+    this.onDetails,
+    this.onDismissAlert,
+    this.dismissing = false,
     this.optionsSummary,
     this.onOptions,
   });
@@ -75,6 +79,16 @@ class RobotCard extends StatelessWidget {
 
   /// Opens remote control (manual driving, D3-D7 only; no button when null).
   final VoidCallback? onDrive;
+
+  /// Earlier cleanings.
+  final VoidCallback? onHistory;
+
+  /// Name, battery and statistics (tap the robot name or the info icon).
+  final VoidCallback? onDetails;
+
+  /// Gen3: clears the current alert (e.g. "dust bin full"); no button when null.
+  final VoidCallback? onDismissAlert;
+  final bool dismissing;
 
   /// Current cleaning choices, e.g. "Map · Normal · Deep" (tap to change).
   final String? optionsSummary;
@@ -118,7 +132,21 @@ class RobotCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(robot.name, style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                      InkWell(
+                        onTap: onDetails,
+                        borderRadius: BorderRadius.circular(6),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Flexible(
+                            child: Text(robot.name,
+                                overflow: TextOverflow.ellipsis,
+                                style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                          ),
+                          if (onDetails != null) ...[
+                            const SizedBox(width: 6),
+                            Icon(Icons.info_outline_rounded, size: 18, color: cs.onSurfaceVariant),
+                          ],
+                        ]),
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         '${robot.model} · ${robot.labelSerial ?? robot.serial}',
@@ -154,6 +182,13 @@ class RobotCard extends StatelessWidget {
                     style: t.bodyLarge?.copyWith(color: toneColor, fontWeight: FontWeight.w600),
                   ),
                 ),
+                if (s?.alert != null && onDismissAlert != null)
+                  dismissing
+                      ? const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                        )
+                      : TextButton(onPressed: onDismissAlert, child: const Text('Dismiss')),
               ]),
             ),
             const SizedBox(height: 16),
@@ -207,33 +242,15 @@ class RobotCard extends StatelessWidget {
                 onPressed: enabled(true) ? () => onCommand(RobotCommand.find) : null,
               ),
             ]),
-            if (onMaps != null || onSchedule != null || onDrive != null) ...[
-              const SizedBox(height: 6),
+            if (onMaps != null || onSchedule != null || onDrive != null || onHistory != null) ...[
+              const SizedBox(height: 10),
               Row(children: [
-                if (onMaps != null)
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onMaps,
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Maps'),
-                    ),
-                  ),
+                if (onMaps != null) _CardAction(icon: Icons.map_outlined, label: 'Maps', onTap: onMaps!),
                 if (onSchedule != null)
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onSchedule,
-                      icon: const Icon(Icons.event_repeat_rounded),
-                      label: const Text('Schedule'),
-                    ),
-                  ),
+                  _CardAction(icon: Icons.event_repeat_rounded, label: 'Schedule', onTap: onSchedule!),
+                if (onHistory != null) _CardAction(icon: Icons.history_rounded, label: 'History', onTap: onHistory!),
                 if (onDrive != null)
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onDrive,
-                      icon: const Icon(Icons.sports_esports_outlined),
-                      label: const Text('Drive'),
-                    ),
-                  ),
+                  _CardAction(icon: Icons.sports_esports_outlined, label: 'Drive', onTap: onDrive!),
               ]),
             ],
           ],
@@ -269,6 +286,36 @@ class _SmallButton extends StatelessWidget {
           onPressed: onPressed,
           icon: icon,
           label: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardAction extends StatelessWidget {
+  const _CardAction({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, color: cs.primary),
+            const SizedBox(height: 4),
+            Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cs.primary)),
+          ]),
         ),
       ),
     );

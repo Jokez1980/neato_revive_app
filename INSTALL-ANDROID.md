@@ -61,7 +61,11 @@ Tap **Maps, no-go lines & zones** on the robot card and pick a map.
 
 Tap **Schedule** on the robot card. Tap **+ Add**, pick days, time, cleaning mode and (optionally) a zone, and **Save**. Tap a cleaning to change or delete it. The robot must be online. Times are shown in your phone's time zone.
 
-## 6. Remote control (D3–D7, experimental)
+## 6. Robot details and history
+
+Tap the robot's **name** on its card to rename it and see battery details (D3–D7) and statistics. **History** on the card lists earlier cleanings; tap one for details. When the robot shows an alert such as "dust bin full", tap **Dismiss** after you have fixed it.
+
+## 7. Remote control (D3–D7, experimental)
 
 If your robot supports it, its card has a **Drive** button. The first time, the app asks for the robot's secret key. Ask the person running the Vacuula server to run this in the server folder (Terminal on Mac/Linux, PowerShell on Windows) and send you the key for your robot:
 

@@ -7,7 +7,10 @@ import '../settings.dart';
 import '../watch.dart';
 import '../widgets/cleaning_options_sheet.dart';
 import '../widgets/robot_card.dart';
+import '../robot/robot_details.dart';
+import 'history_screen.dart';
 import 'manual_screen.dart';
+import 'robot_screen.dart';
 import 'maps_screen.dart';
 import 'schedule_screen.dart';
 import 'settings_screen.dart';
@@ -26,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<RobotInfo> _robots = [];
   final Map<String, RobotStatus> _status = {};
   final Map<String, RobotCommand> _busy = {};
+  final Set<String> _dismissing = {};
   String? _serverError;
   bool _loading = false;
   bool _firstLoadDone = false;
@@ -162,6 +166,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Ge roboten en stund att byta läge innan vi frågar igen
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     if (mounted) _refresh();
+  }
+
+  Future<void> _dismissAlert(RobotInfo r) async {
+    final api = _api;
+    if (api == null || _dismissing.contains(r.serial)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _dismissing.add(r.serial));
+    try {
+      await api.dismissAlert(r);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not dismiss: $e')));
+    } finally {
+      if (mounted) setState(() => _dismissing.remove(r.serial));
+    }
+    if (mounted) _refresh();
+  }
+
+  Future<void> _openDetails(RobotInfo r) async {
+    final api = _api;
+    if (api == null) return;
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => RobotScreen(api: api, robot: r, status: _status[r.serial]),
+    ));
+    if (changed == true && mounted) _refresh();
   }
 
   String _optionsSummary(RobotInfo r) {
@@ -337,6 +365,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(
                       builder: (_) => ScheduleScreen(api: _api!, robot: r),
                     )),
+            onDetails: _api == null || r.gen == RobotGen.unknown ? null : () => _openDetails(r),
+            onHistory: _api == null || r.gen == RobotGen.unknown
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => HistoryScreen(api: _api!, robot: r),
+                    )),
+            onDismissAlert: _api == null || r.gen != RobotGen.gen3 || !r.connected ? null : () => _dismissAlert(r),
+            dismissing: _dismissing.contains(r.serial),
             onDrive: _api == null || !r.connected || !(_status[r.serial]?.manualSupported ?? false)
                 ? null
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(

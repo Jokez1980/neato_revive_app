@@ -11,6 +11,9 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 - **Cleaning options** (tap the line under *Start cleaning*): where (Gen3: **Map** - respects no-go lines, **Whole house** or **Spot** with size; Gen4: floorplan or whole home), suction (Gen3: Eco/Turbo; Gen4: Auto/Eco/Turbo/Max) and navigation (Gen3: Normal/Extra care/Deep; Gen4: Normal/Gentle). Your choice is remembered. Note: *Whole house* ignores no-go lines - use *Map* for that.
 - **Maps**: view your robot's maps, rename them, switch them on/off, start mapping a new one. Draw **no-go lines**, **no-go areas** and **cleaning zones** with your finger, change or delete them, switch them off and on, and clean a single zone. Changes are saved to the robot/server right away, exactly like the Vacuula web app.
 - **Remote control** (D3–D7, experimental): drive the robot with arrows on the phone.
+- **Robot details** (tap the robot's name): rename the robot, see model, serial number and when it was made, battery details on D3–D7 (runtime left, charge cycles, battery date and vendor) and statistics (number of cleanings, total area and time).
+- **History**: earlier cleanings with date, duration, area, battery used, settings, and whether the robot finished or got stuck - the same data as the *Runs* page in the Vacuula web app.
+- **Dismiss alerts** (D3–D7) such as "dust bin full" right on the robot card.
 - **Schedule**: see, add, change and delete scheduled cleanings - days, time, cleaning mode and (optionally) a zone. Gen3 schedules can be switched on/off as a whole; Gen4 events one by one.
 - **Notifications (Android)** when a robot starts, recharges mid-clean, pauses, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline. Turn on in Settings > Notifications.
 - Light and dark mode. Its own app icon (a robot vacuum with a "revive" arrow).
@@ -127,6 +130,7 @@ Vacuula has no login, so never expose its port to the internet. Use a VPN into y
 - `lib/screens/maps_screen.dart`, `lib/screens/map_editor_screen.dart`: map list and editor.
 - `lib/schedule/schedule_models.dart`, `lib/screens/schedule_screen.dart`: schedule commands (Gen3/Gen4), UTC conversion and the schedule screen.
 - `lib/manual/manual_drive.dart`, `lib/screens/manual_screen.dart`: remote control (signed websocket straight to the robot).
+- `lib/robot/robot_details.dart`, `lib/screens/robot_screen.dart`, `lib/screens/history_screen.dart`: rename, battery info, statistics and cleaning history.
 - `lib/problems.dart`: texts for error codes, same wording as the Vacuula web app.
 - `lib/widgets/robot_card.dart`: the card for each robot.
 - `assets/`: app icon and in-app logo (original artwork - not the Vacuula or Neato logos).
