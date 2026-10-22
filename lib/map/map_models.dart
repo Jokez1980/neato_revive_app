@@ -111,7 +111,9 @@ class MapGrid {
   }
 }
 
-enum BoundaryKind { noGoLine, zone, noGoZone }
+/// noGoArea: a no-go line that closes on itself (Gen3 has no real no-go zones,
+/// so a closed loop of no-go line is used to keep the robot out of an area).
+enum BoundaryKind { noGoLine, noGoArea, zone, noGoZone }
 
 /// A no-go line or a zone. Keeps the robot's original JSON so unknown fields survive a save.
 class Boundary {
@@ -122,6 +124,7 @@ class Boundary {
     required String color,
     required List<MapPoint> vertices,
     required bool polygon,
+    bool closedLine = false,
     String? function,
   }) =>
       Boundary({
@@ -129,7 +132,7 @@ class Boundary {
         'name': name,
         'color': color,
         'type': polygon ? 'polygon' : 'polyline',
-        'vertices': [for (final p in vertices) [p.x, p.y]],
+        'vertices': [for (final p in (closedLine && !polygon ? closeLoop(vertices) : vertices)) [p.x, p.y]],
         'enabled': true,
         if (function != null) 'function': function,
       });
@@ -140,17 +143,38 @@ class Boundary {
   String get name => (raw['name'] as String?) ?? '';
   String get color => (raw['color'] as String?) ?? '#ff7a45';
   bool get isPolygon => raw['type'] == 'polygon';
+
+  /// A no-go line whose last point is its first point (a "no-go area").
+  bool get isClosedLine {
+    if (isPolygon) return false;
+    final v = vertices;
+    return v.length >= 4 && (v.first.x - v.last.x).abs() < 1e-6 && (v.first.y - v.last.y).abs() < 1e-6;
+  }
+
+  /// Covers an area (zone, no-go zone or no-go area) rather than being a line.
+  bool get isArea => isPolygon || isClosedLine;
+
+  /// The corners of the shape, without the repeated closing point of a no-go area.
+  List<MapPoint> get shapePoints {
+    final v = vertices;
+    return isClosedLine ? v.sublist(0, v.length - 1) : v;
+  }
+
+  /// Repeats the first point at the end so a no-go line closes on itself.
+  static List<MapPoint> closeLoop(List<MapPoint> pts) =>
+      pts.isEmpty ? pts : [...pts, pts.first];
   bool get enabled => raw['enabled'] != false;
 
   /// Gen4 only: 'cleaning' or 'nogo'.
   String? get function => raw['function'] as String?;
 
   BoundaryKind get kind => !isPolygon
-      ? BoundaryKind.noGoLine
+      ? (isClosedLine ? BoundaryKind.noGoArea : BoundaryKind.noGoLine)
       : (function == 'nogo' ? BoundaryKind.noGoZone : BoundaryKind.zone);
 
   String get kindLabel => switch (kind) {
         BoundaryKind.noGoLine => 'No-go line',
+        BoundaryKind.noGoArea => 'No-go area',
         BoundaryKind.noGoZone => 'No-go zone',
         BoundaryKind.zone => function == 'cleaning' ? 'Cleaning zone' : 'Zone',
       };

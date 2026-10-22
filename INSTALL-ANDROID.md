@@ -51,9 +51,13 @@ Notifications work while your phone can reach the server – at home on Wi-Fi, o
 Tap **Maps, no-go lines & zones** on the robot card and pick a map.
 
 - Pinch to zoom, drag to move the map.
-- **Add** → tap the map to place points → **Done** makes a no-go line. Tap the first point again (or **Close**) to make a zone instead.
+- **Add** → tap the map to place points → **Done** makes a no-go line. Tap the first point again (or **Close**) to close the shape, then choose **Cleaning zone** or **No-go area**.
 - Tap a line or zone to **Edit** or **Delete** it, switch no-go lines on/off, or **Clean** a single zone.
 - Gen3 robots (D3–D7) keep no-go lines and zones on the robot itself, so the robot must be online while you edit.
+
+## 5. Schedule
+
+Tap **Schedule** on the robot card. Tap **+ Add**, pick days, time, cleaning mode and (optionally) a zone, and **Save**. Tap a cleaning to change or delete it. The robot must be online. Times are shown in your phone's time zone.
 
 ## Updating to a new test version
 

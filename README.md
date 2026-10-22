@@ -7,7 +7,8 @@ A mobile app (iPhone and Android) that controls your Neato through your own Vacu
 - Status and battery for all robots, using the same state names as the Vacuula web app. Refreshes every 10 seconds, or every 4 seconds while the robot is busy. Pull down to refresh right away.
 - **Search network**: finds the Vacuula server automatically, even when mDNS does not work (for example Docker on a Mac).
 - Cleaning mode per generation: Gen3 Normal/Eco, Gen4 Auto/Eco/Turbo/Max.
-- **Maps**: view your robot's maps, rename them, switch them on/off, start mapping a new one. Draw **no-go lines** and **zones** with your finger, change or delete them, switch no-go lines off and on, and clean a single zone. Changes are saved to the robot/server right away, exactly like the Vacuula web app.
+- **Maps**: view your robot's maps, rename them, switch them on/off, start mapping a new one. Draw **no-go lines**, **no-go areas** and **cleaning zones** with your finger, change or delete them, switch them off and on, and clean a single zone. Changes are saved to the robot/server right away, exactly like the Vacuula web app.
+- **Schedule**: see, add, change and delete scheduled cleanings - days, time, cleaning mode and (optionally) a zone. Gen3 schedules can be switched on/off as a whole; Gen4 events one by one.
 - **Notifications (Android)** when a robot starts, recharges mid-clean, pauses, finishes, needs help (stuck, picked up, brush, dust bin) or goes offline. Turn on in Settings > Notifications.
 - Light and dark mode. App icon made from the Vacuula logo.
 
@@ -72,9 +73,17 @@ Built with the Flutter plugins `flutter_background_service` and `flutter_local_n
 ## Maps
 Tap **Maps, no-go lines & zones** on a robot card and pick a map.
 - Pinch to zoom, drag to move. Tap a line or zone to select it (Edit / Delete).
-- **Add**: tap the map to place points. **Done** with 2+ points makes a no-go line; tap the first point (or **Close**) to make a zone.
+- **Add**: tap the map to place points. **Done** with 2+ points makes a no-go line; tap the first point (or **Close**) to close the shape and choose **Cleaning zone** or **No-go area/zone**.
 - Gen3 (D3-D7) stores no-go lines and zones on the robot itself, so it must be connected while you edit.
+- Gen3 robots have no real no-go zones, so a **no-go area** is saved as a no-go line that goes all the way around the area (the same thing you could draw by hand). Make sure the robot's base is outside it.
 - Gen4 (D8-D10): zones are cleaning zones or no-go zones; the floorplan in use is updated automatically.
+
+## Schedule
+Tap **Schedule** on a robot card (the robot must be online - the schedule lives on the robot).
+- **+ Add**: pick one or more days, a time, the cleaning mode and optionally a zone. Picking several days creates one cleaning per day.
+- Tap a cleaning to change or delete it.
+- Gen3: the switch at the top turns the whole schedule on/off. The robot keeps times in UTC; the app shows and edits them in your phone's time zone. After a daylight saving change the times move by an hour - edit them again if needed.
+- Gen4: each cleaning has its own on/off switch; you can choose navigation mode and, with a floorplan in use, one or more zones.
 
 ## Away from home
 Vacuula has no login, so never expose its port to the internet. Use a VPN into your home network instead, for example Tailscale (free), and enter the server's Tailscale address (100.x.x.x) in the app.
@@ -90,6 +99,7 @@ Vacuula has no login, so never expose its port to the internet. Use a VPN into y
 - `lib/map/map_models.dart`: maps, map grid (RLE decoding), boundaries and the map API calls.
 - `lib/map/map_painter.dart`: draws the map, zones, lines and the base.
 - `lib/screens/maps_screen.dart`, `lib/screens/map_editor_screen.dart`: map list and editor.
+- `lib/schedule/schedule_models.dart`, `lib/screens/schedule_screen.dart`: schedule commands (Gen3/Gen4), UTC conversion and the schedule screen.
 - `lib/problems.dart`: texts for error codes, same wording as the Vacuula web app.
 - `lib/widgets/robot_card.dart`: the card for each robot.
 - `assets/`: the Vacuula logo and app icon images. To use the red icon instead, change `icon_light.png` to `icon_red.png` and `#ECEAE6` to `#8E0D24` in `pubspec.yaml`, then run `dart run flutter_launcher_icons`.

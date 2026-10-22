@@ -151,8 +151,8 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
     setState(() {
       _drawing = true;
       _editing = existing;
-      _draft = existing?.vertices ?? const [];
-      _draftClosed = existing?.isPolygon ?? false;
+      _draft = existing?.shapePoints ?? const [];
+      _draftClosed = existing?.isArea ?? false;
       _selectedId = null;
     });
   }
@@ -192,9 +192,10 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
   }
 
   bool _hits(Boundary b, MapPoint p, Size size) {
-    final v = b.vertices.map((q) => Offset(q.x * size.width, q.y * size.height)).toList();
+    final v = b.shapePoints.map((q) => Offset(q.x * size.width, q.y * size.height)).toList();
     final t = Offset(p.x * size.width, p.y * size.height);
-    if (b.isPolygon && v.length >= 3 && (Path()..addPolygon(v, true)).contains(t)) return true;
+    if (b.isArea && v.length >= 3 && (Path()..addPolygon(v, true)).contains(t)) return true;
+    if (b.isArea && v.length >= 2) v.add(v.first); // also hit the closing edge
     final tol = 20 / _view.value.getMaxScaleOnAxis();
     for (var i = 0; i + 1 < v.length; i++) {
       if (_distToSegment(t, v[i], v[i + 1]) < tol) return true;
@@ -216,23 +217,30 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
       name: existing?.name ?? '',
       color: existing?.color ?? pickUnusedColor(_boundaries.map((b) => b.color)),
       polygon: _draftClosed,
-      function: existing?.function ?? 'cleaning',
+      function: existing == null
+          ? 'cleaning'
+          : (existing.kind == BoundaryKind.noGoArea || existing.kind == BoundaryKind.noGoZone ? 'nogo' : 'cleaning'),
     );
     if (details == null) return;
+    // Gen4: zones are polygons with a function (cleaning / nogo).
+    // Gen3: a cleaning zone is a polygon; a no-go area is a no-go line closed on itself.
+    final noGo = _draftClosed && details.function == 'nogo';
+    final polygon = _draftClosed && (_gen4 || !noGo);
+    final vertices = (_draftClosed && !polygon) ? Boundary.closeLoop(_draft) : _draft;
     final fn = _gen4 ? (_draftClosed ? details.function : 'nogo') : null;
     final b = existing == null
         ? Boundary.create(
             name: details.name,
             color: details.color,
-            vertices: _draft,
-            polygon: _draftClosed,
+            vertices: vertices,
+            polygon: polygon,
             function: fn,
           )
         : existing.copyWith(
             name: details.name,
             color: details.color,
-            vertices: _draft,
-            polygon: _draftClosed,
+            vertices: vertices,
+            polygon: polygon,
             function: fn,
           );
     final list = [
@@ -335,15 +343,23 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(polygon ? (_gen4 ? 'Zone' : 'Cleaning zone') : 'No-go line',
+              Text(
+                  !polygon
+                      ? 'No-go line'
+                      : fn == 'nogo'
+                          ? (_gen4 ? 'No-go zone' : 'No-go area')
+                          : 'Cleaning zone',
                   style: Theme.of(ctx).textTheme.titleLarge),
               const SizedBox(height: 4),
               Text(
-                polygon
-                    ? (_gen4 && fn == 'nogo'
-                        ? 'The robot stays out of this area.'
-                        : 'An area you can clean on its own.')
-                    : 'The robot will not cross this line.',
+                !polygon
+                    ? 'The robot will not cross this line.'
+                    : fn == 'nogo'
+                        ? (_gen4
+                            ? 'The robot stays out of this area.'
+                            : 'The robot stays out of this area. Saved as a no-go line around it, '
+                                'since D3-D7 robots have no-go lines but not no-go zones.')
+                        : 'An area you can clean on its own.',
                 style: Theme.of(ctx).textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
@@ -353,12 +369,12 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
               ),
-              if (polygon && _gen4) ...[
+              if (polygon) ...[
                 const SizedBox(height: 16),
                 SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'cleaning', label: Text('Cleaning zone')),
-                    ButtonSegment(value: 'nogo', label: Text('No-go zone')),
+                  segments: [
+                    const ButtonSegment(value: 'cleaning', label: Text('Cleaning zone')),
+                    ButtonSegment(value: 'nogo', label: Text(_gen4 ? 'No-go zone' : 'No-go area')),
                   ],
                   selected: {fn},
                   onSelectionChanged: (s) => setS(() => fn = s.first),
@@ -388,7 +404,9 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
                 onPressed: () {
                   final n = nameCtl.text.trim();
                   Navigator.pop(ctx, (
-                    name: n.isEmpty ? (polygon ? 'Zone' : 'No-go line') : n,
+                    name: n.isEmpty
+                        ? (!polygon ? 'No-go line' : (fn == 'nogo' ? 'No-go area' : 'Zone'))
+                        : n,
                     color: col,
                     function: fn,
                   ));
@@ -490,7 +508,7 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
                       ? 'Zone closed. Tap Done to name it and save.'
                       : _draft.length < 2
                           ? 'Tap the map to add points. Pinch to zoom, drag to move the map.'
-                          : 'Keep tapping to add points. Tap Done for a no-go line, or tap the first point (or Close) to make a zone.',
+                          : 'Keep tapping to add points. Tap Done for a no-go line, or tap the first point (or Close) to make a zone or no-go area.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -620,7 +638,7 @@ class _MapEditorScreenState extends State<MapEditorScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       tileColor: color.withValues(alpha: 0.12),
-      leading: Icon(b.isPolygon ? Icons.pentagon_outlined : Icons.horizontal_rule_rounded, color: color),
+      leading: Icon(b.isArea ? Icons.pentagon_outlined : Icons.horizontal_rule_rounded, color: color),
       title: Text(b.name.isEmpty ? b.kindLabel : b.name),
       subtitle: Text(b.kindLabel + (b.canToggle && !b.enabled ? ' · off' : ''), style: TextStyle(color: color)),
       trailing: b.canToggle

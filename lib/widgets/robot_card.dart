@@ -56,6 +56,7 @@ class RobotCard extends StatelessWidget {
     required this.busy,
     required this.onCommand,
     this.onMaps,
+    this.onSchedule,
   });
 
   final RobotInfo robot;
@@ -65,6 +66,9 @@ class RobotCard extends StatelessWidget {
 
   /// Opens the maps of this robot (no button when null).
   final VoidCallback? onMaps;
+
+  /// Opens the cleaning schedule of this robot (no button when null).
+  final VoidCallback? onSchedule;
 
   @override
   Widget build(BuildContext context) {
@@ -186,16 +190,26 @@ class RobotCard extends StatelessWidget {
                 onPressed: enabled(true) ? () => onCommand(RobotCommand.find) : null,
               ),
             ]),
-            if (onMaps != null) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 46,
-                child: TextButton.icon(
-                  onPressed: onMaps,
-                  icon: const Icon(Icons.map_outlined),
-                  label: const Text('Maps, no-go lines & zones'),
-                ),
-              ),
+            if (onMaps != null || onSchedule != null) ...[
+              const SizedBox(height: 6),
+              Row(children: [
+                if (onMaps != null)
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onMaps,
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Maps & zones'),
+                    ),
+                  ),
+                if (onSchedule != null)
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onSchedule,
+                      icon: const Icon(Icons.event_repeat_rounded),
+                      label: const Text('Schedule'),
+                    ),
+                  ),
+              ]),
             ],
           ],
         ),

@@ -81,13 +81,13 @@ class MapPainter extends CustomPainter {
 
     for (final b in boundaries) {
       if (b.id == hiddenId) continue;
-      final pts = b.vertices.map(at).toList();
+      final pts = b.shapePoints.map(at).toList();
       if (pts.length < 2) continue;
       final color = parseHex(b.color);
       final alpha = b.enabled ? 1.0 : 0.4;
       final selected = b.id == selectedId;
-      final path = Path()..addPolygon(pts, b.isPolygon);
-      if (b.isPolygon) {
+      final path = Path()..addPolygon(pts, b.isArea);
+      if (b.isArea) {
         canvas.drawPath(path, Paint()..color = color.withValues(alpha: (selected ? 0.38 : 0.22) * alpha));
       }
       canvas.drawPath(
@@ -100,7 +100,7 @@ class MapPainter extends CustomPainter {
           ..strokeCap = StrokeCap.round,
       );
       if (b.name.isNotEmpty) {
-        final c = b.isPolygon
+        final c = b.isArea
             ? Offset(pts.map((p) => p.dx).reduce((a, b) => a + b) / pts.length,
                 pts.map((p) => p.dy).reduce((a, b) => a + b) / pts.length)
             : Offset((pts.first.dx + pts.last.dx) / 2, (pts.first.dy + pts.last.dy) / 2);

@@ -7,6 +7,7 @@ import '../settings.dart';
 import '../watch.dart';
 import '../widgets/robot_card.dart';
 import 'maps_screen.dart';
+import 'schedule_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -300,6 +301,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ? null
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(
                       builder: (_) => MapsScreen(api: _api!, robot: r, settings: settings),
+                    )),
+            onSchedule: _api == null || r.gen == RobotGen.unknown || !r.connected
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => ScheduleScreen(api: _api!, robot: r),
                     )),
           ),
         ),
