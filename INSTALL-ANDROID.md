@@ -63,11 +63,19 @@ Tap **Schedule** on the robot card. Tap **+ Add**, pick days, time, cleaning mod
 
 ## 6. Remote control (D3–D7, experimental)
 
-If your robot supports it, its card has a **Drive** button. The first time, the app asks for the robot's secret key. Ask the person running the Vacuula server to run this in the server folder and send you the key for your robot:
+If your robot supports it, its card has a **Drive** button. The first time, the app asks for the robot's secret key. Ask the person running the Vacuula server to run this in the server folder (Terminal on Mac/Linux, PowerShell on Windows) and send you the key for your robot:
 
 ```bash
 docker compose exec vacuula python -c "import sqlite3; [print(r[0], r[1]) for r in sqlite3.connect('/server/data/vacuula.db').execute('select robot, password from gen3__data')]"
 ```
+
+It prints the serial number and the key on one line - paste the key (the part after the space), or the whole line.
+
+**Windows 11:** the same command works in PowerShell. In File Explorer, open the folder with Vacuula's `docker-compose.yaml`, right-click inside it and choose *Open in Terminal*, then paste the command. Make sure Docker Desktop is running.
+
+If it doesn't work:
+- *"no configuration file provided"* or *"service vacuula is not running"*: you are in the wrong folder, or the service has another name. Run `docker ps`, find the Vacuula container name in the last column, and use `docker exec <container-name> python -c "..."` with the same part in quotes.
+- No lines are printed: the robot is not a Gen3 model (Botvac Connected, D3–D7), or it hasn't been set up with the Vacuula server yet.
 
 Your phone must be on the same Wi-Fi as the robot, and the robot must be idle. Hold an arrow to move, let go to stop, and use the red **STOP** button at any time.
 

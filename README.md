@@ -97,7 +97,13 @@ The app talks **directly to the robot** for this, so the phone must be on the sa
 docker compose exec vacuula python -c "import sqlite3; [print(r[0], r[1]) for r in sqlite3.connect('/server/data/vacuula.db').execute('select robot, password from gen3__data')]"
 ```
 
-It prints `serial key` for each Gen3 robot. Paste the key for your robot into the app; the app stores it only on the phone. The robot must be idle (not cleaning). It leaves remote control by itself after about 30 seconds without commands.
+**Windows 11:** the same command works in PowerShell. In File Explorer, open the folder with Vacuula's `docker-compose.yaml`, right-click inside it and choose *Open in Terminal*, then paste the command. Make sure Docker Desktop is running.
+
+If it doesn't work:
+- *"no configuration file provided"* or *"service vacuula is not running"*: you are in the wrong folder, or the service has another name. Run `docker ps`, find the Vacuula container name in the last column, and use `docker exec <container-name> python -c "..."` with the same part in quotes.
+- No lines are printed: the robot is not a Gen3 model (Botvac Connected, D3–D7), or it hasn't been set up with the Vacuula server yet.
+
+The command prints `serial key` for each Gen3 robot. Paste the key for your robot into the app; the app stores it only on the phone. The robot must be idle (not cleaning). It leaves remote control by itself after about 30 seconds without commands.
 
 This has been tested against a simulated robot, not yet against a real D7. If it doesn't connect, please report what the app shows.
 

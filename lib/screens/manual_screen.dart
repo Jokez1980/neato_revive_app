@@ -168,7 +168,8 @@ class _ManualScreenState extends State<ManualScreen> {
         style: t.bodyMedium,
       ),
       const SizedBox(height: 16),
-      Text('1. On the computer running Vacuula, in the folder with its docker-compose.yaml, run:',
+      Text('1. On the computer running Vacuula, open Terminal (Mac/Linux) or PowerShell (Windows) in the '
+          'folder with its docker-compose.yaml, and run:',
           style: t.bodyMedium),
       const SizedBox(height: 8),
       Container(
