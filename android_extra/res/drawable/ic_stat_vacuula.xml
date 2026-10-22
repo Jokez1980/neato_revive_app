@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome status-bar icon: a D-shaped robot vacuum seen from above. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M4,10.5A8,8.5 0,0 1,20 10.5L20,19A2,2 0,0 1,18 21L6,21A2,2 0,0 1,4 19Z M12,5A2,2 0,1 0,12 9A2,2 0,1 0,12 5Z M7,16L17,16L17,17.5L7,17.5Z" />
+</vector>
